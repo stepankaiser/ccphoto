@@ -4,8 +4,7 @@ import { renderMobilePage } from "./mobile-page.js";
 
 describe("renderMobilePage", () => {
   const token = "test-token-abc123";
-  const uploadUrl = "http://192.168.1.5:3847/upload";
-  const html = renderMobilePage(token, uploadUrl);
+  const html = renderMobilePage(token);
 
   it("returns valid HTML", () => {
     assert.ok(html.startsWith("<!DOCTYPE html>"));
@@ -16,8 +15,11 @@ describe("renderMobilePage", () => {
     assert.ok(html.includes(JSON.stringify(token)));
   });
 
-  it("embeds upload URL correctly", () => {
-    assert.ok(html.includes(uploadUrl));
+  it("derives URLs from window.location.origin", () => {
+    assert.ok(html.includes("window.location.origin"));
+    assert.ok(html.includes("origin + '/upload'"));
+    assert.ok(html.includes("origin + '/frame'"));
+    assert.ok(html.includes("origin + '/events'"));
   });
 
   it("contains required UI elements", () => {
@@ -39,14 +41,23 @@ describe("renderMobilePage", () => {
     assert.ok(html.includes("EventSource"));
   });
 
-  // ---- Content Display ---------------------------------------------------
+  // ---- Mode Toggle --------------------------------------------------------
 
-  it("contains content display bar", () => {
-    assert.ok(html.includes('id="content-bar"'));
+  it("contains mode toggle pill", () => {
+    assert.ok(html.includes("mode-toggle"));
+    assert.ok(html.includes("mode-photo-btn"));
+    assert.ok(html.includes("mode-live-btn"));
   });
 
-  it("contains content messages container", () => {
-    assert.ok(html.includes('id="content-messages"'));
+  it("contains photo view and live view sections", () => {
+    assert.ok(html.includes('id="photo-view"'));
+    assert.ok(html.includes('id="live-view"'));
+  });
+
+  // ---- Toast System -------------------------------------------------------
+
+  it("contains toast container", () => {
+    assert.ok(html.includes("toast-container"));
   });
 
   it("contains content-push SSE event listener", () => {
@@ -55,6 +66,17 @@ describe("renderMobilePage", () => {
 
   it("contains renderBasicMarkdown function", () => {
     assert.ok(html.includes("renderBasicMarkdown"));
+  });
+
+  // ---- History Panel ------------------------------------------------------
+
+  it("contains history button", () => {
+    assert.ok(html.includes("history-btn"));
+  });
+
+  it("contains history panel logic", () => {
+    assert.ok(html.includes("history-panel"));
+    assert.ok(html.includes("messageHistory"));
   });
 
   // ---- Annotations -------------------------------------------------------
@@ -71,35 +93,57 @@ describe("renderMobilePage", () => {
     assert.ok(html.includes("#ff0000"));
   });
 
-  it("contains send and skip buttons", () => {
+  it("contains send and cancel buttons", () => {
     assert.ok(html.includes("Send"));
-    assert.ok(html.includes("Skip"));
+    assert.ok(html.includes("Cancel"));
+  });
+
+  it("contains annotate and resend button", () => {
+    assert.ok(html.includes("annotate-resend-btn"));
+    assert.ok(html.includes("Annotate"));
   });
 
   // ---- Live Mode -----------------------------------------------------------
 
-  it("live mode renders video element", () => {
-    const html = renderMobilePage("tok", "https://host/frame", { liveMode: true });
+  it("contains video element for live mode", () => {
     assert.ok(html.includes('id="live-video"'));
   });
 
-  it("live mode renders frame canvas", () => {
-    const html = renderMobilePage("tok", "https://host/frame", { liveMode: true });
+  it("contains frame canvas", () => {
     assert.ok(html.includes('id="frame-canvas"'));
   });
 
-  it("live mode includes getUserMedia call", () => {
-    const html = renderMobilePage("tok", "https://host/frame", { liveMode: true });
+  it("includes getUserMedia call", () => {
     assert.ok(html.includes("getUserMedia"));
   });
 
-  it("live mode includes LIVE badge", () => {
-    const html = renderMobilePage("tok", "https://host/frame", { liveMode: true });
+  it("includes LIVE badge", () => {
     assert.ok(html.includes("LIVE"));
+    assert.ok(html.includes("live-badge"));
+    assert.ok(html.includes("live-dot"));
   });
 
-  it("photo mode does not include live video element", () => {
-    const html = renderMobilePage("tok", "http://host/upload");
-    assert.ok(!html.includes('id="live-video"'));
+  it("includes streaming indicator with animated dots", () => {
+    assert.ok(html.includes("streaming-indicator"));
+    assert.ok(html.includes("streaming-dots"));
+  });
+
+  it("includes stop button", () => {
+    assert.ok(html.includes("stop-btn"));
+    assert.ok(html.includes("Stop Streaming"));
+  });
+
+  // ---- SSE Events ----------------------------------------------------------
+
+  it("handles photo-requested event", () => {
+    assert.ok(html.includes("photo-requested"));
+  });
+
+  it("handles switch-to-live event", () => {
+    assert.ok(html.includes("switch-to-live"));
+  });
+
+  it("contains clearRequestState function", () => {
+    assert.ok(html.includes("clearRequestState"));
   });
 });

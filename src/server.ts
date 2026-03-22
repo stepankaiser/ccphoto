@@ -75,8 +75,7 @@ function handleGetRoot(
     return;
   }
 
-  const uploadUrl = `http://${cfg.host}:${cfg.port}/upload`;
-  const html = renderMobilePage(cfg.token, uploadUrl);
+  const html = renderMobilePage(cfg.token);
   res.writeHead(200, {
     "Content-Type": "text/html; charset=utf-8",
     "Cache-Control": "no-store",
@@ -178,14 +177,13 @@ function handleEvents(
   });
 }
 
-function handleRequest(
+function handleUnifiedRequest(
   req: http.IncomingMessage,
   res: http.ServerResponse,
   cfg: ServerConfig,
 ): void {
-  const url = new URL(req.url ?? "/", `http://${req.headers.host}`);
+  const url = new URL(req.url ?? "/", `${(req.socket as any).encrypted ? 'https' : 'http'}://${req.headers.host}`);
 
-  // CORS preflight
   if (req.method === "OPTIONS") {
     res.writeHead(204, {
       "Access-Control-Allow-Origin": "*",
@@ -212,13 +210,13 @@ function handleRequest(
     return;
   }
 
-  if (req.method === "GET" && url.pathname === "/events") {
-    handleEvents(req, res, cfg);
+  if (req.method === "POST" && url.pathname === "/frame") {
+    handleFrameUpload(req, res, cfg);
     return;
   }
 
-  if (req.method === "POST" && url.pathname === "/frame") {
-    handleFrameUpload(req, res, cfg);
+  if (req.method === "GET" && url.pathname === "/events") {
+    handleEvents(req, res, cfg);
     return;
   }
 
@@ -277,60 +275,9 @@ function handleFrameUpload(
   });
 }
 
-function handleHttpsRequest(
-  req: http.IncomingMessage,
-  res: http.ServerResponse,
-  cfg: ServerConfig,
-): void {
-  const url = new URL(req.url ?? "/", `https://${req.headers.host}`);
-
-  if (req.method === "OPTIONS") {
-    res.writeHead(204, {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type",
-    });
-    res.end();
-    return;
-  }
-
-  if (req.method === "GET" && url.pathname === "/") {
-    if (!checkToken(url, cfg.token)) {
-      res.writeHead(403, { "Content-Type": "text/plain" });
-      res.end("Forbidden");
-      return;
-    }
-    const frameUrl = `https://${cfg.host}:${cfg.httpsPort}/frame`;
-    const html = renderMobilePage(cfg.token, frameUrl, { liveMode: true });
-    res.writeHead(200, {
-      "Content-Type": "text/html; charset=utf-8",
-      "Cache-Control": "no-store",
-    });
-    res.end(html);
-    return;
-  }
-
-  if (req.method === "POST" && url.pathname === "/frame") {
-    handleFrameUpload(req, res, cfg);
-    return;
-  }
-
-  if (req.method === "GET" && url.pathname === "/health") {
-    res.writeHead(200, { "Content-Type": "text/plain" });
-    res.end("ok");
-    return;
-  }
-
-  if (req.method === "GET" && url.pathname === "/events") {
-    handleEvents(req, res, cfg);
-    return;
-  }
-
-  res.writeHead(404, { "Content-Type": "text/plain" });
-  res.end("Not Found");
-}
-
 export async function startHttpsServer(cfg: ServerConfig, certs: CertPems): Promise<ServerConfig> {
+  ensureOutputDir(cfg.outputDir);
+
   if (httpsServer) return config!;
 
   const httpsPort = cfg.httpsPort ?? cfg.port + 1;
@@ -339,7 +286,7 @@ export async function startHttpsServer(cfg: ServerConfig, certs: CertPems): Prom
   return new Promise((resolve, reject) => {
     const s = https.createServer(
       { key: certs.key, cert: certs.cert },
-      (req, res) => handleHttpsRequest(req, res, cfg),
+      (req, res) => handleUnifiedRequest(req, res, cfg),
     );
 
     s.on("error", (err: NodeJS.ErrnoException) => {
@@ -384,7 +331,7 @@ export async function startServer(cfg: ServerConfig): Promise<ServerConfig> {
   config = cfg;
 
   return new Promise((resolve, reject) => {
-    const s = http.createServer((req, res) => handleRequest(req, res, cfg));
+    const s = http.createServer((req, res) => handleUnifiedRequest(req, res, cfg));
 
     s.on("error", (err: NodeJS.ErrnoException) => {
       if (err.code === "EADDRINUSE") {
@@ -408,6 +355,12 @@ export async function startServer(cfg: ServerConfig): Promise<ServerConfig> {
 export function requestPhoto(): void {
   for (const client of sseClients) {
     client.write("event: photo-requested\ndata: {}\n\n");
+  }
+}
+
+export function switchToLiveMode(): void {
+  for (const client of sseClients) {
+    client.write("event: switch-to-live\ndata: {}\n\n");
   }
 }
 

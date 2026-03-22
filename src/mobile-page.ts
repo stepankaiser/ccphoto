@@ -1,4 +1,4 @@
-export function renderMobilePage(token: string, uploadUrl: string, options?: { liveMode?: boolean }): string {
+export function renderMobilePage(token: string): string {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -43,6 +43,41 @@ export function renderMobilePage(token: string, uploadUrl: string, options?: { l
       letter-spacing: 2px;
       text-transform: uppercase;
       color: #555;
+    }
+
+    /* Mode toggle pill */
+    .mode-toggle {
+      position: absolute;
+      top: 80px;
+      display: flex;
+      background: #222;
+      border-radius: 24px;
+      padding: 3px;
+      gap: 0;
+    }
+
+    .mode-btn {
+      padding: 8px 24px;
+      border: none;
+      border-radius: 21px;
+      background: transparent;
+      color: #888;
+      font-size: 14px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      touch-action: manipulation;
+      -webkit-appearance: none;
+      transition: background 0.2s, color 0.2s;
+      min-height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .mode-btn.active {
+      background: #2563eb;
+      color: #fff;
     }
 
     .main {
@@ -124,6 +159,25 @@ export function renderMobilePage(token: string, uploadUrl: string, options?: { l
       border: 2px solid #333;
     }
 
+    .annotate-resend-btn {
+      padding: 10px 24px;
+      border: 1px solid #2563eb;
+      border-radius: 12px;
+      background: transparent;
+      color: #60a5fa;
+      font-size: 14px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      touch-action: manipulation;
+      -webkit-appearance: none;
+      min-height: 48px;
+    }
+
+    .annotate-resend-btn:active {
+      background: rgba(37, 99, 235, 0.15);
+    }
+
     .error-msg {
       font-size: 16px;
       font-weight: 600;
@@ -132,9 +186,23 @@ export function renderMobilePage(token: string, uploadUrl: string, options?: { l
       padding: 0 24px;
     }
 
+    /* Status bar at bottom */
+    .status-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 44px;
+      background: #1a1a1a;
+      border-top: 1px solid #333;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      z-index: 50;
+    }
+
     .photo-count {
-      position: absolute;
-      bottom: 48px;
       font-size: 14px;
       color: #555;
       font-weight: 500;
@@ -142,6 +210,22 @@ export function renderMobilePage(token: string, uploadUrl: string, options?: { l
 
     .photo-count.active {
       color: #888;
+    }
+
+    .history-btn {
+      border: none;
+      background: transparent;
+      color: #60a5fa;
+      font-size: 14px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      touch-action: manipulation;
+      -webkit-appearance: none;
+      padding: 8px 12px;
+      min-height: 48px;
+      display: flex;
+      align-items: center;
     }
 
     @keyframes pulse {
@@ -160,56 +244,142 @@ export function renderMobilePage(token: string, uploadUrl: string, options?: { l
       margin-bottom: 8px;
     }
 
-    .content-bar {
+    /* Toast container */
+    .toast-container {
       position: fixed;
-      bottom: 0;
+      top: 0;
       left: 0;
       right: 0;
-      height: 44px;
-      background: #1a1a1a;
-      border-top: 1px solid #333;
+      z-index: 200;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 12px 16px;
+      gap: 8px;
+      pointer-events: none;
+    }
+
+    .toast {
+      width: 100%;
+      max-width: 400px;
+      background: rgba(30, 30, 30, 0.9);
+      -webkit-backdrop-filter: blur(12px);
+      backdrop-filter: blur(12px);
+      border: 1px solid #333;
+      border-radius: 12px;
+      padding: 12px 40px 12px 16px;
+      color: #fff;
+      font-size: 14px;
+      line-height: 1.5;
+      pointer-events: auto;
+      animation: toastSlideIn 0.3s ease-out;
+      position: relative;
+      word-wrap: break-word;
+    }
+
+    @keyframes toastSlideIn {
+      from { transform: translateY(-100%); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .toast-dismiss {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 24px;
+      height: 24px;
+      border: none;
+      background: rgba(255,255,255,0.15);
+      color: #aaa;
+      border-radius: 50%;
+      font-size: 12px;
+      cursor: pointer;
+      touch-action: manipulation;
+      -webkit-appearance: none;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 8px;
-      font-size: 14px;
+      line-height: 1;
+    }
+
+    .toast-truncated {
       color: #60a5fa;
+      font-size: 12px;
+      margin-top: 4px;
+      cursor: pointer;
+    }
+
+    .toast-image {
+      width: 48px;
+      height: 48px;
+      border-radius: 6px;
+      object-fit: cover;
+      margin-top: 8px;
+    }
+
+    .toast .content-text h1 { font-size: 18px; margin: 4px 0; color: #fff; }
+    .toast .content-text h2 { font-size: 16px; margin: 4px 0; color: #fff; }
+    .toast .content-text h3 { font-size: 14px; margin: 2px 0; color: #fff; }
+    .toast .content-text pre { background: #000; padding: 6px; border-radius: 4px; overflow-x: auto; margin: 4px 0; font-size: 12px; }
+    .toast .content-text code { background: #000; padding: 1px 3px; border-radius: 2px; font-size: 12px; }
+    .toast .content-text pre code { padding: 0; background: none; }
+    .toast .content-text ul { padding-left: 16px; margin: 2px 0; }
+    .toast .content-text strong { color: #fff; }
+
+    /* History panel */
+    .history-panel {
+      position: fixed;
+      inset: 0;
+      z-index: 150;
+      background: #111;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .history-header {
+      height: 56px;
+      background: #1a1a1a;
+      border-bottom: 1px solid #333;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 16px;
+      flex-shrink: 0;
+    }
+
+    .history-title {
+      font-size: 16px;
       font-weight: 600;
+      color: #fff;
+    }
+
+    .history-close-btn {
+      border: none;
+      background: transparent;
+      color: #60a5fa;
+      font-size: 14px;
+      font-weight: 600;
+      font-family: inherit;
       cursor: pointer;
       touch-action: manipulation;
-      z-index: 50;
+      -webkit-appearance: none;
+      padding: 8px 12px;
+      min-height: 48px;
+      display: flex;
+      align-items: center;
     }
 
-    .content-badge {
-      background: #2563eb;
-      color: #fff;
-      border-radius: 12px;
-      padding: 2px 8px;
-      font-size: 12px;
-      min-width: 20px;
-      text-align: center;
-    }
-
-    .toggle-arrow {
-      font-size: 10px;
-      transition: transform 0.2s;
-    }
-
-    .toggle-arrow.open {
-      transform: rotate(180deg);
-    }
-
-    .content-panel {
-      position: fixed;
-      bottom: 44px;
-      left: 0;
-      right: 0;
-      max-height: 50vh;
-      background: #1a1a1a;
-      border-top: 1px solid #333;
+    .history-body {
+      flex: 1;
       overflow-y: auto;
-      z-index: 49;
       -webkit-overflow-scrolling: touch;
+    }
+
+    .history-empty {
+      text-align: center;
+      color: #555;
+      padding: 48px 16px;
+      font-size: 14px;
     }
 
     .content-message {
@@ -247,6 +417,7 @@ export function renderMobilePage(token: string, uploadUrl: string, options?: { l
       margin-top: 8px;
     }
 
+    /* Annotation overlay */
     .annotation-screen {
       position: fixed;
       inset: 0;
@@ -316,6 +487,7 @@ export function renderMobilePage(token: string, uploadUrl: string, options?: { l
       background: #333;
     }
 
+    /* Live mode */
     .live-container {
       position: relative;
       width: 100%;
@@ -365,100 +537,225 @@ export function renderMobilePage(token: string, uploadUrl: string, options?: { l
       50% { opacity: 0.3; }
     }
 
-    .frame-info {
+    .streaming-indicator {
       position: absolute;
       top: 12px;
       right: 12px;
       background: rgba(0,0,0,0.6);
       color: #aaa;
-      padding: 4px 8px;
+      padding: 4px 10px;
       border-radius: 6px;
-      font-size: 11px;
-      font-family: monospace;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .streaming-dots {
+      display: inline-flex;
+      gap: 3px;
+    }
+
+    .streaming-dots span {
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: #60a5fa;
+      animation: streamDot 1.4s ease-in-out infinite;
+    }
+
+    .streaming-dots span:nth-child(2) {
+      animation-delay: 0.2s;
+    }
+
+    .streaming-dots span:nth-child(3) {
+      animation-delay: 0.4s;
+    }
+
+    @keyframes streamDot {
+      0%, 80%, 100% { opacity: 0.3; }
+      40% { opacity: 1; }
     }
 
     .live-status {
       font-size: 14px;
       color: #888;
     }
+
+    .stop-btn {
+      width: 200px;
+      height: 48px;
+      border: 2px solid #ef4444;
+      border-radius: 12px;
+      background: transparent;
+      color: #ef4444;
+      font-size: 16px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      touch-action: manipulation;
+      -webkit-appearance: none;
+      min-height: 48px;
+    }
+
+    .stop-btn:active {
+      background: rgba(239, 68, 68, 0.15);
+    }
   </style>
 </head>
 <body>
   <div class="app-title">CCPhoto</div>
 
-${options?.liveMode ? `
-  <div class="main" id="main-area">
+  <div class="mode-toggle">
+    <button class="mode-btn active" id="mode-photo-btn" type="button">Photo</button>
+    <button class="mode-btn" id="mode-live-btn" type="button">Live</button>
+  </div>
+
+  <!-- Photo view (default) -->
+  <div class="main" id="photo-view">
+    <div id="main-area">
+      <button id="take-photo-btn" type="button">Take Photo</button>
+    </div>
+  </div>
+  <input type="file" id="file-input" accept="image/*" capture="environment">
+
+  <!-- Live view (hidden by default) -->
+  <div class="main" id="live-view" style="display:none;">
     <div class="live-container" id="live-container">
       <video id="live-video" class="live-video" playsinline muted autoplay></video>
       <div class="live-badge"><div class="live-dot"></div> LIVE</div>
-      <div class="frame-info" id="frame-info">connecting...</div>
+      <div class="streaming-indicator" id="streaming-indicator" style="display:none;">
+        Streaming<div class="streaming-dots"><span></span><span></span><span></span></div>
+      </div>
       <canvas id="frame-canvas" style="display:none;"></canvas>
     </div>
     <div class="live-status" id="live-status">Starting camera...</div>
-  </div>
-` : `
-  <div class="main" id="main-area">
-    <button id="take-photo-btn" type="button">Take Photo</button>
+    <button class="stop-btn" id="stop-btn" type="button">Stop Streaming</button>
   </div>
 
-  <input type="file" id="file-input" accept="image/*" capture="environment">
-`}
+  <!-- Toast container -->
+  <div class="toast-container" id="toast-container"></div>
 
-  <div class="photo-count" id="photo-count"></div>
-
-  <div id="content-bar" class="content-bar" style="display:none;" role="button">
-    <span class="content-badge" id="content-badge">0</span> from Claude
-    <span class="toggle-arrow" id="toggle-arrow">&#9650;</span>
-  </div>
-  <div id="content-panel" class="content-panel" style="display:none;">
-    <div id="content-messages"></div>
+  <!-- Status bar -->
+  <div class="status-bar">
+    <div class="photo-count" id="photo-count"></div>
+    <button class="history-btn" id="history-btn" type="button">History</button>
   </div>
 
   <script>
     (function() {
       var token = ${JSON.stringify(token)};
-      var uploadUrl = ${JSON.stringify(uploadUrl)};
+      var origin = window.location.origin;
+      var uploadUrl = origin + '/upload';
+      var frameUrl = origin + '/frame';
+      var evtUrl = origin + '/events';
       var photoCount = 0;
       var busy = false;
+      var currentMode = 'photo';
+      var liveStream = null;
+      var frameInterval = null;
+      var messageHistory = [];
+      var autoResetTimer = null;
+      var lastUploadedDataUrl = null;
+      var lastUploadedFile = null;
 
       var mainArea = document.getElementById('main-area');
       var fileInput = document.getElementById('file-input');
       var photoCountEl = document.getElementById('photo-count');
-      var takePhotoBtn = document.getElementById('take-photo-btn');
+      var photoView = document.getElementById('photo-view');
+      var liveView = document.getElementById('live-view');
+      var modePhotoBtn = document.getElementById('mode-photo-btn');
+      var modeLiveBtn = document.getElementById('mode-live-btn');
+      var toastContainer = document.getElementById('toast-container');
+      var historyBtn = document.getElementById('history-btn');
+      var stopBtn = document.getElementById('stop-btn');
+      var liveVideo = document.getElementById('live-video');
+      var frameCanvas = document.getElementById('frame-canvas');
+      var frameCtx = frameCanvas.getContext('2d');
+      var streamingIndicator = document.getElementById('streaming-indicator');
+      var liveStatus = document.getElementById('live-status');
 
-      if (takePhotoBtn) {
-        takePhotoBtn.addEventListener('click', function() {
-          if (!busy) {
-            fileInput.value = '';
-            fileInput.click();
-          }
-        });
+      // --- Mode toggle ---
+      modePhotoBtn.addEventListener('click', function() {
+        if (currentMode === 'photo') return;
+        switchToPhoto();
+      });
+
+      modeLiveBtn.addEventListener('click', function() {
+        if (currentMode === 'live') return;
+        switchToLive();
+      });
+
+      function switchToPhoto() {
+        currentMode = 'photo';
+        modePhotoBtn.classList.add('active');
+        modeLiveBtn.classList.remove('active');
+        photoView.style.display = '';
+        liveView.style.display = 'none';
+        stopLiveStream();
       }
 
-      if (fileInput) {
-        fileInput.addEventListener('change', function() {
-          if (!fileInput.files || !fileInput.files[0]) return;
-          if (busy) return;
+      function switchToLive() {
+        currentMode = 'live';
+        modeLiveBtn.classList.add('active');
+        modePhotoBtn.classList.remove('active');
+        photoView.style.display = 'none';
+        liveView.style.display = '';
+        startLiveStream();
+      }
 
-          var file = fileInput.files[0];
-          var reader = new FileReader();
-          reader.onload = function() {
-            showAnnotationScreen(reader.result, file);
-          };
-          reader.readAsDataURL(file);
-        });
+      // --- Photo mode ---
+      function bindTakePhotoBtn() {
+        var btn = document.getElementById('take-photo-btn');
+        if (btn) {
+          btn.addEventListener('click', function() {
+            if (!busy) {
+              clearRequestState();
+              fileInput.value = '';
+              fileInput.click();
+            }
+          });
+        }
+      }
+      bindTakePhotoBtn();
+
+      fileInput.addEventListener('change', function() {
+        if (!fileInput.files || !fileInput.files[0]) return;
+        if (busy) return;
+        clearRequestState();
+        var file = fileInput.files[0];
+
+        // Read data URL for potential annotation later
+        var reader = new FileReader();
+        reader.onload = function() {
+          lastUploadedDataUrl = reader.result;
+          lastUploadedFile = file;
+          uploadFile(file);
+        };
+        reader.readAsDataURL(file);
+      });
+
+      function clearRequestState() {
+        var btn = document.getElementById('take-photo-btn');
+        if (btn) {
+          btn.classList.remove('requesting');
+        }
+        var notice = document.querySelector('.request-notice');
+        if (notice && notice.parentNode) {
+          notice.parentNode.removeChild(notice);
+        }
       }
 
       function resetToButton() {
         busy = false;
+        lastUploadedDataUrl = null;
+        lastUploadedFile = null;
+        if (autoResetTimer) {
+          clearTimeout(autoResetTimer);
+          autoResetTimer = null;
+        }
         mainArea.innerHTML = '<button id="take-photo-btn" type="button">Take Photo</button>';
-        var btn = document.getElementById('take-photo-btn');
-        btn.addEventListener('click', function() {
-          if (!busy) {
-            fileInput.value = '';
-            fileInput.click();
-          }
-        });
+        bindTakePhotoBtn();
       }
 
       function updateCount() {
@@ -476,78 +773,6 @@ ${options?.liveMode ? `
         div.appendChild(document.createTextNode(str));
         return div.innerHTML;
       }
-      // SSE: listen for photo requests from Claude
-      var evtUrl = ${JSON.stringify(uploadUrl.replace(/\/[^/]*$/, '/events'))};
-      var evtSeparator = evtUrl.indexOf('?') === -1 ? '?' : '&';
-      var evtSource = new EventSource(evtUrl + evtSeparator + 'token=' + encodeURIComponent(token));
-
-      evtSource.addEventListener('photo-requested', function() {
-        // Vibrate if available (Android)
-        if (navigator.vibrate) navigator.vibrate(200);
-
-        // Flash the button if we're in the ready state
-        var btn = document.getElementById('take-photo-btn');
-        if (btn) {
-          btn.classList.add('requesting');
-          // Add notice text
-          var existing = document.querySelector('.request-notice');
-          if (!existing) {
-            var notice = document.createElement('div');
-            notice.className = 'request-notice';
-            notice.textContent = 'Photo requested!';
-            mainArea.insertBefore(notice, mainArea.firstChild);
-          }
-        }
-      });
-
-      // Content display from Claude
-      var contentBar = document.getElementById('content-bar');
-      var contentPanel = document.getElementById('content-panel');
-      var contentMessages = document.getElementById('content-messages');
-      var contentBadge = document.getElementById('content-badge');
-      var toggleArrow = document.getElementById('toggle-arrow');
-      var messageCount = 0;
-      var panelOpen = false;
-
-      contentBar.addEventListener('click', function() {
-        panelOpen = !panelOpen;
-        contentPanel.style.display = panelOpen ? '' : 'none';
-        toggleArrow.classList.toggle('open', panelOpen);
-      });
-
-      evtSource.addEventListener('content-push', function(e) {
-        var data = JSON.parse(e.data);
-        messageCount++;
-        contentBadge.textContent = messageCount;
-        contentBar.style.display = '';
-
-        if (navigator.vibrate) navigator.vibrate(100);
-
-        var msg = document.createElement('div');
-        msg.className = 'content-message';
-
-        var label = document.createElement('div');
-        label.className = 'content-label';
-        label.textContent = 'From Claude';
-        msg.appendChild(label);
-
-        if (data.text) {
-          var textDiv = document.createElement('div');
-          textDiv.className = 'content-text';
-          textDiv.innerHTML = renderBasicMarkdown(data.text);
-          msg.appendChild(textDiv);
-        }
-
-        if (data.imageData && data.mimeType) {
-          var img = document.createElement('img');
-          img.className = 'content-image';
-          img.src = 'data:' + data.mimeType + ';base64,' + data.imageData;
-          img.alt = 'From Claude';
-          msg.appendChild(img);
-        }
-
-        contentMessages.insertBefore(msg, contentMessages.firstChild);
-      });
 
       function renderBasicMarkdown(text) {
         var escaped = escapeHtml(text);
@@ -558,7 +783,7 @@ ${options?.liveMode ? `
 
         for (var i = 0; i < lines.length; i++) {
           var line = lines[i];
-          if (line.match(/^\`\`\`/)) {
+          if (line.match(/^\\\`\\\`\\\`/)) {
             if (inCode) {
               result.push('<pre><code>' + codeLines.join('\\n') + '</code></pre>');
               codeLines = [];
@@ -578,7 +803,7 @@ ${options?.liveMode ? `
           if (line.match(/^- /)) { result.push('<ul><li>' + line.slice(2) + '</li></ul>'); continue; }
 
           line = line.replace(/\\*\\*(.+?)\\*\\*/g, '<strong>$1</strong>');
-          line = line.replace(/\`([^\`]+)\`/g, '<code>$1</code>');
+          line = line.replace(/\\\`([^\\\`]+)\\\`/g, '<code>$1</code>');
           result.push(line === '' ? '<br>' : line + '<br>');
         }
         if (inCode) {
@@ -587,7 +812,330 @@ ${options?.liveMode ? `
         return result.join('\\n');
       }
 
-      // Annotation screen
+      // --- Upload ---
+      function uploadFile(file) {
+        busy = true;
+        mainArea.innerHTML =
+          '<div class="uploading">' +
+            '<div class="spinner"></div>' +
+            '<div class="uploading-text">Uploading...</div>' +
+          '</div>';
+
+        var thumbUrl = URL.createObjectURL(file);
+        var formData = new FormData();
+        formData.append('photo', file);
+
+        var url = uploadUrl + '?token=' + encodeURIComponent(token);
+
+        fetch(url, { method: 'POST', body: formData })
+        .then(function(res) {
+          if (!res.ok) throw new Error('Upload failed (' + res.status + ')');
+          return res;
+        })
+        .then(function() {
+          photoCount++;
+          updateCount();
+          mainArea.innerHTML =
+            '<div class="success">' +
+              '<div class="checkmark">&#10003;</div>' +
+              '<img class="thumbnail" src="' + thumbUrl + '" alt="Uploaded photo">' +
+              '<button class="annotate-resend-btn" id="annotate-resend-btn" type="button">Annotate &amp; Resend</button>' +
+            '</div>';
+
+          var annotateBtn = document.getElementById('annotate-resend-btn');
+          annotateBtn.addEventListener('click', function() {
+            if (autoResetTimer) {
+              clearTimeout(autoResetTimer);
+              autoResetTimer = null;
+            }
+            if (lastUploadedDataUrl && lastUploadedFile) {
+              showAnnotationScreen(lastUploadedDataUrl, lastUploadedFile);
+            }
+          });
+
+          autoResetTimer = setTimeout(function() {
+            URL.revokeObjectURL(thumbUrl);
+            resetToButton();
+          }, 4000);
+        })
+        .catch(function(err) {
+          URL.revokeObjectURL(thumbUrl);
+          mainArea.innerHTML =
+            '<div class="error-msg">' + escapeHtml(err.message || 'Upload failed') + '</div>';
+          setTimeout(function() { resetToButton(); }, 3000);
+        });
+      }
+
+      // --- Toast system ---
+      var toastCount = 0;
+      var MAX_TOASTS = 3;
+
+      function showToast(data) {
+        // Enforce max toasts
+        while (toastContainer.children.length >= MAX_TOASTS) {
+          toastContainer.removeChild(toastContainer.firstChild);
+        }
+
+        var toast = document.createElement('div');
+        toast.className = 'toast';
+
+        // Dismiss button
+        var dismissBtn = document.createElement('button');
+        dismissBtn.className = 'toast-dismiss';
+        dismissBtn.textContent = 'X';
+        dismissBtn.addEventListener('click', function() {
+          removeToast(toast);
+        });
+        toast.appendChild(dismissBtn);
+
+        if (data.text) {
+          var textDiv = document.createElement('div');
+          textDiv.className = 'content-text';
+          var fullHtml = renderBasicMarkdown(data.text);
+          if (data.text.length > 150) {
+            var truncatedHtml = renderBasicMarkdown(data.text.substring(0, 150) + '...');
+            textDiv.innerHTML = truncatedHtml;
+            var expandHint = document.createElement('div');
+            expandHint.className = 'toast-truncated';
+            expandHint.textContent = 'tap to expand';
+            toast.appendChild(textDiv);
+            toast.appendChild(expandHint);
+            var expanded = false;
+            expandHint.addEventListener('click', function() {
+              if (!expanded) {
+                textDiv.innerHTML = fullHtml;
+                expandHint.style.display = 'none';
+                expanded = true;
+              }
+            });
+          } else {
+            textDiv.innerHTML = fullHtml;
+            toast.appendChild(textDiv);
+          }
+        }
+
+        if (data.imageData && data.mimeType) {
+          var img = document.createElement('img');
+          img.className = 'toast-image';
+          img.src = 'data:' + data.mimeType + ';base64,' + data.imageData;
+          img.alt = 'From Claude';
+          toast.appendChild(img);
+        }
+
+        toastContainer.appendChild(toast);
+
+        // Auto-dismiss after 6 seconds
+        var dismissTimer = setTimeout(function() {
+          removeToast(toast);
+        }, 6000);
+
+        toast._dismissTimer = dismissTimer;
+      }
+
+      function removeToast(toast) {
+        if (toast._dismissTimer) clearTimeout(toast._dismissTimer);
+        if (toast.parentNode) {
+          toast.parentNode.removeChild(toast);
+        }
+      }
+
+      // --- History panel ---
+      function showHistoryPanel() {
+        var panel = document.createElement('div');
+        panel.className = 'history-panel';
+        panel.id = 'history-panel';
+
+        var header = document.createElement('div');
+        header.className = 'history-header';
+
+        var title = document.createElement('div');
+        title.className = 'history-title';
+        title.textContent = 'Message History';
+        header.appendChild(title);
+
+        var closeBtn = document.createElement('button');
+        closeBtn.className = 'history-close-btn';
+        closeBtn.textContent = 'Close';
+        closeBtn.type = 'button';
+        closeBtn.addEventListener('click', function() {
+          document.body.removeChild(panel);
+        });
+        header.appendChild(closeBtn);
+        panel.appendChild(header);
+
+        var body = document.createElement('div');
+        body.className = 'history-body';
+
+        if (messageHistory.length === 0) {
+          var empty = document.createElement('div');
+          empty.className = 'history-empty';
+          empty.textContent = 'No messages yet';
+          body.appendChild(empty);
+        } else {
+          for (var i = messageHistory.length - 1; i >= 0; i--) {
+            var item = messageHistory[i];
+            var msg = document.createElement('div');
+            msg.className = 'content-message';
+
+            var label = document.createElement('div');
+            label.className = 'content-label';
+            label.textContent = 'From Claude';
+            msg.appendChild(label);
+
+            if (item.text) {
+              var textDiv = document.createElement('div');
+              textDiv.className = 'content-text';
+              textDiv.innerHTML = renderBasicMarkdown(item.text);
+              msg.appendChild(textDiv);
+            }
+
+            if (item.imageData && item.mimeType) {
+              var img = document.createElement('img');
+              img.className = 'content-image';
+              img.src = 'data:' + item.mimeType + ';base64,' + item.imageData;
+              img.alt = 'From Claude';
+              msg.appendChild(img);
+            }
+
+            body.appendChild(msg);
+          }
+        }
+
+        panel.appendChild(body);
+        document.body.appendChild(panel);
+      }
+
+      historyBtn.addEventListener('click', function() {
+        var existing = document.getElementById('history-panel');
+        if (existing) {
+          document.body.removeChild(existing);
+        } else {
+          showHistoryPanel();
+        }
+      });
+
+      // --- SSE ---
+      var evtSource = new EventSource(evtUrl + '?token=' + encodeURIComponent(token));
+
+      evtSource.addEventListener('photo-requested', function() {
+        if (navigator.vibrate) navigator.vibrate(200);
+
+        // Switch to photo mode if in live
+        if (currentMode === 'live') {
+          switchToPhoto();
+        }
+
+        var btn = document.getElementById('take-photo-btn');
+        if (btn) {
+          btn.classList.add('requesting');
+          var existing = document.querySelector('.request-notice');
+          if (!existing) {
+            var notice = document.createElement('div');
+            notice.className = 'request-notice';
+            notice.textContent = 'Photo requested!';
+            mainArea.insertBefore(notice, mainArea.firstChild);
+          }
+        }
+      });
+
+      evtSource.addEventListener('content-push', function(e) {
+        var data = JSON.parse(e.data);
+
+        if (navigator.vibrate) navigator.vibrate(100);
+
+        // Store in history
+        messageHistory.push(data);
+
+        // Show toast
+        showToast(data);
+      });
+
+      evtSource.addEventListener('switch-to-live', function() {
+        if (navigator.vibrate) navigator.vibrate(200);
+        if (currentMode !== 'live') {
+          switchToLive();
+        }
+      });
+
+      // --- Live mode ---
+      var FRAME_INTERVAL_MS = 3000;
+
+      function startLiveStream() {
+        liveStatus.textContent = 'Starting camera...';
+        liveStatus.style.color = '#888';
+        streamingIndicator.style.display = 'none';
+
+        navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
+        })
+        .then(function(stream) {
+          liveStream = stream;
+          liveVideo.srcObject = stream;
+          liveStatus.textContent = 'Camera active -- streaming to Claude';
+
+          liveVideo.onloadedmetadata = function() {
+            frameCanvas.width = liveVideo.videoWidth;
+            frameCanvas.height = liveVideo.videoHeight;
+            startFrameCapture();
+          };
+        })
+        .catch(function(err) {
+          liveStatus.textContent = 'Camera access denied: ' + err.message;
+          liveStatus.style.color = '#ef4444';
+        });
+      }
+
+      function startFrameCapture() {
+        streamingIndicator.style.display = '';
+
+        frameInterval = setInterval(function() {
+          if (liveVideo.readyState < 2) return;
+
+          frameCtx.drawImage(liveVideo, 0, 0);
+          frameCanvas.toBlob(function(blob) {
+            if (!blob) return;
+
+            var url = frameUrl + '?token=' + encodeURIComponent(token)
+              + '&w=' + frameCanvas.width
+              + '&h=' + frameCanvas.height;
+
+            fetch(url, {
+              method: 'POST',
+              headers: { 'Content-Type': 'image/jpeg' },
+              body: blob,
+            })
+            .then(function() {
+              // streaming indicator handled by CSS animation
+            })
+            .catch(function() {
+              // silent fail, indicator keeps animating
+            });
+          }, 'image/jpeg', 0.7);
+        }, FRAME_INTERVAL_MS);
+      }
+
+      function stopLiveStream() {
+        if (frameInterval) {
+          clearInterval(frameInterval);
+          frameInterval = null;
+        }
+        if (liveStream) {
+          liveStream.getTracks().forEach(function(track) {
+            track.stop();
+          });
+          liveStream = null;
+          liveVideo.srcObject = null;
+        }
+        streamingIndicator.style.display = 'none';
+        liveStatus.textContent = 'Starting camera...';
+        liveStatus.style.color = '#888';
+      }
+
+      stopBtn.addEventListener('click', function() {
+        switchToPhoto();
+      });
+
+      // --- Annotation screen (opt-in) ---
       var annotationOverlay = null;
       var annotationCanvas = null;
       var annotationCtx = null;
@@ -601,9 +1149,7 @@ ${options?.liveMode ? `
 
       function showAnnotationScreen(dataUrl, file) {
         originalFile = file;
-        busy = true;
 
-        // Create overlay
         annotationOverlay = document.createElement('div');
         annotationOverlay.className = 'annotation-screen';
 
@@ -627,6 +1173,7 @@ ${options?.liveMode ? `
           btn.className = 'color-btn' + (c.color === drawColor ? ' active' : '');
           btn.style.background = c.color;
           btn.setAttribute('data-color', c.color);
+          btn.type = 'button';
           btn.addEventListener('click', function() {
             drawColor = c.color;
             toolbar.querySelectorAll('.color-btn').forEach(function(b) { b.classList.remove('active'); });
@@ -642,6 +1189,7 @@ ${options?.liveMode ? `
         var sizeBtn = document.createElement('button');
         sizeBtn.className = 'size-btn';
         sizeBtn.textContent = 'Thin';
+        sizeBtn.type = 'button';
         sizeBtn.addEventListener('click', function() {
           drawWidth = drawWidth === 3 ? 8 : 3;
           sizeBtn.textContent = drawWidth === 3 ? 'Thin' : 'Thick';
@@ -651,6 +1199,7 @@ ${options?.liveMode ? `
         var undoBtn = document.createElement('button');
         undoBtn.className = 'tool-btn';
         undoBtn.textContent = 'Undo';
+        undoBtn.type = 'button';
         undoBtn.addEventListener('click', function() {
           if (strokes.length > 0) {
             strokes.pop();
@@ -662,6 +1211,7 @@ ${options?.liveMode ? `
         var clearBtn = document.createElement('button');
         clearBtn.className = 'tool-btn';
         clearBtn.textContent = 'Clear';
+        clearBtn.type = 'button';
         clearBtn.addEventListener('click', function() {
           strokes = [];
           redrawCanvas();
@@ -672,18 +1222,19 @@ ${options?.liveMode ? `
         sep2.className = 'toolbar-sep';
         toolbar.appendChild(sep2);
 
-        var skipBtn = document.createElement('button');
-        skipBtn.className = 'tool-btn';
-        skipBtn.textContent = 'Skip';
-        skipBtn.addEventListener('click', function() {
-          uploadFile(originalFile);
+        var cancelBtn = document.createElement('button');
+        cancelBtn.className = 'tool-btn';
+        cancelBtn.textContent = 'Cancel';
+        cancelBtn.type = 'button';
+        cancelBtn.addEventListener('click', function() {
           closeAnnotation();
         });
-        toolbar.appendChild(skipBtn);
+        toolbar.appendChild(cancelBtn);
 
         var sendBtn = document.createElement('button');
         sendBtn.className = 'tool-btn primary';
         sendBtn.textContent = 'Send';
+        sendBtn.type = 'button';
         sendBtn.addEventListener('click', function() {
           annotationCanvas.toBlob(function(blob) {
             var annotatedFile = new File([blob], 'annotated.jpg', { type: 'image/jpeg' });
@@ -719,7 +1270,6 @@ ${options?.liveMode ? `
         var ch = annotationCanvas.height / dpr;
         annotationCtx.clearRect(0, 0, cw, ch);
 
-        // Draw photo scaled to fit
         var scale = Math.min(cw / originalImage.width, ch / originalImage.height);
         var w = originalImage.width * scale;
         var h = originalImage.height * scale;
@@ -727,7 +1277,6 @@ ${options?.liveMode ? `
         var y = (ch - h) / 2;
         annotationCtx.drawImage(originalImage, x, y, w, h);
 
-        // Replay strokes
         for (var i = 0; i < strokes.length; i++) {
           var s = strokes[i];
           annotationCtx.beginPath();
@@ -761,7 +1310,6 @@ ${options?.liveMode ? `
           e.preventDefault();
           var pos = getPos(e);
           currentStroke.points.push(pos);
-          // Draw live segment
           annotationCtx.beginPath();
           annotationCtx.strokeStyle = currentStroke.color;
           annotationCtx.lineWidth = currentStroke.width;
@@ -796,105 +1344,6 @@ ${options?.liveMode ? `
           annotationOverlay = null;
         }
       }
-
-      function uploadFile(file) {
-        // Show uploading state
-        mainArea.innerHTML =
-          '<div class="uploading">' +
-            '<div class="spinner"></div>' +
-            '<div class="uploading-text">Uploading...</div>' +
-          '</div>';
-
-        var thumbUrl = URL.createObjectURL(file);
-        var formData = new FormData();
-        formData.append('photo', file);
-
-        var separator = uploadUrl.indexOf('?') === -1 ? '?' : '&';
-        var url = uploadUrl + separator + 'token=' + encodeURIComponent(token);
-
-        fetch(url, { method: 'POST', body: formData })
-        .then(function(res) {
-          if (!res.ok) throw new Error('Upload failed (' + res.status + ')');
-          return res;
-        })
-        .then(function() {
-          photoCount++;
-          updateCount();
-          mainArea.innerHTML =
-            '<div class="success">' +
-              '<div class="checkmark">&#10003;</div>' +
-              '<img class="thumbnail" src="' + thumbUrl + '" alt="Uploaded photo">' +
-            '</div>';
-          setTimeout(function() {
-            URL.revokeObjectURL(thumbUrl);
-            resetToButton();
-          }, 2000);
-        })
-        .catch(function(err) {
-          URL.revokeObjectURL(thumbUrl);
-          mainArea.innerHTML =
-            '<div class="error-msg">' + escapeHtml(err.message || 'Upload failed') + '</div>';
-          setTimeout(function() { resetToButton(); }, 3000);
-        });
-      }
-${options?.liveMode ? `
-      // Live mode
-      var liveVideo = document.getElementById('live-video');
-      var frameCanvas = document.getElementById('frame-canvas');
-      var frameCtx = frameCanvas.getContext('2d');
-      var frameInfo = document.getElementById('frame-info');
-      var liveStatus = document.getElementById('live-status');
-      var frameUrl = uploadUrl; // uploadUrl is already the frame URL in live mode
-      var frameCount = 0;
-      var frameInterval = null;
-      var FRAME_INTERVAL_MS = 3000;
-
-      navigator.mediaDevices.getUserMedia({
-        video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
-      })
-      .then(function(stream) {
-        liveVideo.srcObject = stream;
-        liveStatus.textContent = 'Camera active — streaming to Claude';
-
-        liveVideo.onloadedmetadata = function() {
-          frameCanvas.width = liveVideo.videoWidth;
-          frameCanvas.height = liveVideo.videoHeight;
-          startFrameCapture();
-        };
-      })
-      .catch(function(err) {
-        liveStatus.textContent = 'Camera access denied: ' + err.message;
-        liveStatus.style.color = '#ef4444';
-      });
-
-      function startFrameCapture() {
-        frameInterval = setInterval(function() {
-          if (liveVideo.readyState < 2) return;
-
-          frameCtx.drawImage(liveVideo, 0, 0);
-          frameCanvas.toBlob(function(blob) {
-            if (!blob) return;
-
-            var url = frameUrl + '?token=' + encodeURIComponent(token)
-              + '&w=' + frameCanvas.width
-              + '&h=' + frameCanvas.height;
-
-            fetch(url, {
-              method: 'POST',
-              headers: { 'Content-Type': 'image/jpeg' },
-              body: blob,
-            })
-            .then(function() {
-              frameCount++;
-              frameInfo.textContent = frameCount + ' frames';
-            })
-            .catch(function() {
-              frameInfo.textContent = 'upload error';
-            });
-          }, 'image/jpeg', 0.7);
-        }, FRAME_INTERVAL_MS);
-      }
-` : ''}
     })();
   </script>
 </body>

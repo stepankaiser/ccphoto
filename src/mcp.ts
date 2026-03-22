@@ -5,7 +5,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import qrcode from "qrcode-terminal";
-import { startServer, isServerRunning, getServerConfig, waitForPhoto, requestPhoto, hasConnectedClients, sendToPhone, startHttpsServer, isHttpsServerRunning, getLatestFrame } from "./server.js";
+import { startServer, isServerRunning, getServerConfig, waitForPhoto, requestPhoto, hasConnectedClients, sendToPhone, startHttpsServer, isHttpsServerRunning, getLatestFrame, switchToLiveMode } from "./server.js";
 import { getLocalIPv4 } from "./network.js";
 import { generateToken } from "./token.js";
 import { ensureCerts } from "./cert.js";
@@ -28,9 +28,9 @@ function generateQRText(url: string): string {
 }
 
 async function ensureServer(): Promise<string> {
-  if (isServerRunning()) {
+  if (isHttpsServerRunning()) {
     const cfg = getServerConfig()!;
-    return `http://${cfg.host}:${cfg.port}/?token=${cfg.token}`;
+    return `https://${cfg.host}:${cfg.httpsPort}/?token=${cfg.token}`;
   }
 
   const host = getLocalIPv4();
@@ -41,14 +41,19 @@ async function ensureServer(): Promise<string> {
   }
 
   const token = generateToken();
-  const cfg = await startServer({
-    port: DEFAULT_PORT,
-    outputDir: getOutputDir(),
-    token,
-    host,
-  });
+  const certs = await ensureCerts(host);
+  const cfg = await startHttpsServer(
+    {
+      port: DEFAULT_PORT,
+      outputDir: getOutputDir(),
+      token,
+      host,
+      httpsPort: DEFAULT_PORT,
+    },
+    certs,
+  );
 
-  return `http://${cfg.host}:${cfg.port}/?token=${cfg.token}`;
+  return `https://${cfg.host}:${cfg.httpsPort}/?token=${cfg.token}`;
 }
 
 export async function runMcpServer(): Promise<void> {
@@ -59,10 +64,10 @@ export async function runMcpServer(): Promise<void> {
 
   server.tool(
     "capture_photo",
-    "Start the camera server and return a QR code for the user to scan with their phone. The server stays running for the entire session — the user only needs to scan once, then they can take photos anytime. If a phone is already connected, it will be notified that a photo is requested (the button will pulse). CRITICAL: You MUST paste the QR code directly in your response text (inside a code block) so the user can see and scan it. After showing the QR, IMMEDIATELY call wait_for_photo to receive the photo.",
+    "Start the camera server and return a QR code for the user to scan with their phone. The server stays running for the entire session — the user only needs to scan once, then they can take photos anytime and switch between Photo and Live modes. If a phone is already connected, it will be notified that a photo is requested (the button will pulse). On Android Chrome, the user needs to tap Advanced then Proceed past the certificate warning (one-time). CRITICAL: You MUST paste the QR code directly in your response text (inside a code block) so the user can see and scan it. After showing the QR, IMMEDIATELY call wait_for_photo to receive the photo.",
     {},
     async () => {
-      const alreadyRunning = isServerRunning();
+      const alreadyRunning = isHttpsServerRunning();
       const url = await ensureServer();
 
       if (alreadyRunning && hasConnectedClients()) {
@@ -100,9 +105,11 @@ export async function runMcpServer(): Promise<void> {
     },
     async ({ timeout_seconds }) => {
       const timeoutMs = (timeout_seconds ?? 120) * 1000;
-      const url = isServerRunning()
-        ? `http://${getServerConfig()!.host}:${getServerConfig()!.port}/?token=${getServerConfig()!.token}`
-        : null;
+      const url = isHttpsServerRunning()
+        ? `https://${getServerConfig()!.host}:${getServerConfig()!.httpsPort}/?token=${getServerConfig()!.token}`
+        : isServerRunning()
+          ? `http://${getServerConfig()!.host}:${getServerConfig()!.port}/?token=${getServerConfig()!.token}`
+          : null;
 
       const meta = await waitForPhoto(timeoutMs);
 
@@ -266,28 +273,29 @@ export async function runMcpServer(): Promise<void> {
 
   server.tool(
     "start_livestream",
-    "Start a semi-real-time video stream from the phone camera. The phone streams frames every 3 seconds which you can view with get_live_frame. Requires HTTPS — Android users click 'Proceed' past the cert warning (one-time). After starting, call get_live_frame repeatedly to see what the camera sees, and send_to_phone to show guidance on the phone screen. CRITICAL: Show the QR code in your response text inside a code block.",
+    "Start a semi-real-time video stream from the phone camera. If a phone is already connected, it switches to live mode automatically (no new QR needed). The phone streams frames every 3 seconds. Call get_live_frame to see what the camera sees, and send_to_phone to show guidance on the phone screen. CRITICAL: If showing a QR code, paste it in your response text inside a code block.",
     {},
     async () => {
-      // Ensure HTTP server is running first
-      const httpUrl = await ensureServer();
+      const url = await ensureServer();
 
-      const host = getServerConfig()!.host;
-      const certs = await ensureCerts(host);
+      if (hasConnectedClients()) {
+        switchToLiveMode();
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: "Phone has been switched to Live mode. The camera viewfinder is now active and streaming frames every 3 seconds. Call get_live_frame to see what the camera sees.",
+            },
+          ],
+        };
+      }
 
-      const cfg = getServerConfig()!;
-      await startHttpsServer(cfg, certs);
-
-      const httpsUrl = `https://${cfg.host}:${cfg.httpsPort}/?token=${cfg.token}`;
-      const qrText = generateQRText(httpsUrl);
-
-      process.stderr.write(`[ccphoto] Livestream HTTPS server ready on port ${cfg.httpsPort}\n`);
-
+      const qrText = generateQRText(url);
       return {
         content: [
           {
             type: "text" as const,
-            text: `Livestream ready! Phone needs to open the HTTPS URL below.\n\nOn Android Chrome: tap "Advanced" then "Proceed" when you see the certificate warning (one-time).\n\nQR_CODE:\n${qrText}\nURL: ${httpsUrl}\n\nAfter the phone connects and grants camera access, call get_live_frame to see what the camera sees.`,
+            text: `Livestream ready! Scan the QR code to connect your phone.\n\nOn Android Chrome: tap "Advanced" then "Proceed" past the certificate warning (one-time).\n\nQR_CODE:\n${qrText}\nURL: ${url}\n\nAfter connecting, the phone will be in Photo mode by default — it will automatically switch to Live mode. Call get_live_frame to see what the camera sees.`,
           },
         ],
       };
