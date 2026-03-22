@@ -75,4 +75,31 @@ describe("renderMobilePage", () => {
     assert.ok(html.includes("Send"));
     assert.ok(html.includes("Skip"));
   });
+
+  // ---- Live Mode -----------------------------------------------------------
+
+  it("live mode renders video element", () => {
+    const html = renderMobilePage("tok", "https://host/frame", { liveMode: true });
+    assert.ok(html.includes('id="live-video"'));
+  });
+
+  it("live mode renders frame canvas", () => {
+    const html = renderMobilePage("tok", "https://host/frame", { liveMode: true });
+    assert.ok(html.includes('id="frame-canvas"'));
+  });
+
+  it("live mode includes getUserMedia call", () => {
+    const html = renderMobilePage("tok", "https://host/frame", { liveMode: true });
+    assert.ok(html.includes("getUserMedia"));
+  });
+
+  it("live mode includes LIVE badge", () => {
+    const html = renderMobilePage("tok", "https://host/frame", { liveMode: true });
+    assert.ok(html.includes("LIVE"));
+  });
+
+  it("photo mode does not include live video element", () => {
+    const html = renderMobilePage("tok", "http://host/upload");
+    assert.ok(!html.includes('id="live-video"'));
+  });
 });

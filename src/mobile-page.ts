@@ -1,4 +1,4 @@
-export function renderMobilePage(token: string, uploadUrl: string): string {
+export function renderMobilePage(token: string, uploadUrl: string, options?: { liveMode?: boolean }): string {
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -315,16 +315,94 @@ export function renderMobilePage(token: string, uploadUrl: string): string {
       height: 24px;
       background: #333;
     }
+
+    .live-container {
+      position: relative;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+    }
+
+    .live-video {
+      width: 100%;
+      max-width: 640px;
+      max-height: 60vh;
+      object-fit: contain;
+      border-radius: 12px;
+      background: #000;
+    }
+
+    .live-badge {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      background: #ef4444;
+      color: #fff;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .live-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #fff;
+      animation: livePulse 1.5s ease-in-out infinite;
+    }
+
+    @keyframes livePulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+
+    .frame-info {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      background: rgba(0,0,0,0.6);
+      color: #aaa;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-family: monospace;
+    }
+
+    .live-status {
+      font-size: 14px;
+      color: #888;
+    }
   </style>
 </head>
 <body>
   <div class="app-title">CCPhoto</div>
 
+${options?.liveMode ? `
+  <div class="main" id="main-area">
+    <div class="live-container" id="live-container">
+      <video id="live-video" class="live-video" playsinline muted autoplay></video>
+      <div class="live-badge"><div class="live-dot"></div> LIVE</div>
+      <div class="frame-info" id="frame-info">connecting...</div>
+      <canvas id="frame-canvas" style="display:none;"></canvas>
+    </div>
+    <div class="live-status" id="live-status">Starting camera...</div>
+  </div>
+` : `
   <div class="main" id="main-area">
     <button id="take-photo-btn" type="button">Take Photo</button>
   </div>
 
   <input type="file" id="file-input" accept="image/*" capture="environment">
+`}
 
   <div class="photo-count" id="photo-count"></div>
 
@@ -348,24 +426,28 @@ export function renderMobilePage(token: string, uploadUrl: string): string {
       var photoCountEl = document.getElementById('photo-count');
       var takePhotoBtn = document.getElementById('take-photo-btn');
 
-      takePhotoBtn.addEventListener('click', function() {
-        if (!busy) {
-          fileInput.value = '';
-          fileInput.click();
-        }
-      });
+      if (takePhotoBtn) {
+        takePhotoBtn.addEventListener('click', function() {
+          if (!busy) {
+            fileInput.value = '';
+            fileInput.click();
+          }
+        });
+      }
 
-      fileInput.addEventListener('change', function() {
-        if (!fileInput.files || !fileInput.files[0]) return;
-        if (busy) return;
+      if (fileInput) {
+        fileInput.addEventListener('change', function() {
+          if (!fileInput.files || !fileInput.files[0]) return;
+          if (busy) return;
 
-        var file = fileInput.files[0];
-        var reader = new FileReader();
-        reader.onload = function() {
-          showAnnotationScreen(reader.result, file);
-        };
-        reader.readAsDataURL(file);
-      });
+          var file = fileInput.files[0];
+          var reader = new FileReader();
+          reader.onload = function() {
+            showAnnotationScreen(reader.result, file);
+          };
+          reader.readAsDataURL(file);
+        });
+      }
 
       function resetToButton() {
         busy = false;
@@ -755,6 +837,64 @@ export function renderMobilePage(token: string, uploadUrl: string): string {
           setTimeout(function() { resetToButton(); }, 3000);
         });
       }
+${options?.liveMode ? `
+      // Live mode
+      var liveVideo = document.getElementById('live-video');
+      var frameCanvas = document.getElementById('frame-canvas');
+      var frameCtx = frameCanvas.getContext('2d');
+      var frameInfo = document.getElementById('frame-info');
+      var liveStatus = document.getElementById('live-status');
+      var frameUrl = uploadUrl; // uploadUrl is already the frame URL in live mode
+      var frameCount = 0;
+      var frameInterval = null;
+      var FRAME_INTERVAL_MS = 3000;
+
+      navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
+      })
+      .then(function(stream) {
+        liveVideo.srcObject = stream;
+        liveStatus.textContent = 'Camera active — streaming to Claude';
+
+        liveVideo.onloadedmetadata = function() {
+          frameCanvas.width = liveVideo.videoWidth;
+          frameCanvas.height = liveVideo.videoHeight;
+          startFrameCapture();
+        };
+      })
+      .catch(function(err) {
+        liveStatus.textContent = 'Camera access denied: ' + err.message;
+        liveStatus.style.color = '#ef4444';
+      });
+
+      function startFrameCapture() {
+        frameInterval = setInterval(function() {
+          if (liveVideo.readyState < 2) return;
+
+          frameCtx.drawImage(liveVideo, 0, 0);
+          frameCanvas.toBlob(function(blob) {
+            if (!blob) return;
+
+            var url = frameUrl + '?token=' + encodeURIComponent(token)
+              + '&w=' + frameCanvas.width
+              + '&h=' + frameCanvas.height;
+
+            fetch(url, {
+              method: 'POST',
+              headers: { 'Content-Type': 'image/jpeg' },
+              body: blob,
+            })
+            .then(function() {
+              frameCount++;
+              frameInfo.textContent = frameCount + ' frames';
+            })
+            .catch(function() {
+              frameInfo.textContent = 'upload error';
+            });
+          }, 'image/jpeg', 0.7);
+        }, FRAME_INTERVAL_MS);
+      }
+` : ''}
     })();
   </script>
 </body>

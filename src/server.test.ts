@@ -14,6 +14,7 @@ import {
   requestPhoto,
   hasConnectedClients,
   sendToPhone,
+  getLatestFrame,
   _resetState,
 } from "./server.js";
 import { generateToken } from "./token.js";
@@ -316,5 +317,53 @@ describe("sendToPhone", () => {
     await boot();
     const result = sendToPhone({ text: "hello" });
     assert.equal(result, false);
+  });
+});
+
+describe("frame endpoint", () => {
+  afterEach(() => {
+    stopServer();
+    _resetState();
+    if (tmpDir && fs.existsSync(tmpDir)) {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  it("getLatestFrame returns null initially", async () => {
+    await boot();
+    assert.equal(getLatestFrame(), null);
+  });
+
+  it("POST /frame with valid token stores frame", async () => {
+    await boot();
+    const fakeJpeg = Buffer.from("fake-jpeg-data");
+    const res = await request({
+      port,
+      path: `/frame?token=${token}&w=640&h=480`,
+      method: "POST",
+      headers: { "Content-Type": "image/jpeg" },
+      body: fakeJpeg,
+    });
+    assert.equal(res.status, 200);
+    const json = JSON.parse(res.body);
+    assert.equal(json.ok, true);
+
+    const frame = getLatestFrame();
+    assert.ok(frame);
+    assert.equal(frame!.width, 640);
+    assert.equal(frame!.height, 480);
+    assert.equal(frame!.mimeType, "image/jpeg");
+  });
+
+  it("POST /frame without token returns 403", async () => {
+    await boot();
+    const res = await request({
+      port,
+      path: "/frame",
+      method: "POST",
+      headers: { "Content-Type": "image/jpeg" },
+      body: Buffer.from("data"),
+    });
+    assert.equal(res.status, 403);
   });
 });

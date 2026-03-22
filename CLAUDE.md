@@ -6,7 +6,7 @@ Phone camera bridge for Claude Code — MCP server + standalone CLI.
 
 ```bash
 npm run build        # Compile TypeScript
-npm test             # Run tests (48 tests, requires tsx)
+npm test             # Run tests (70 tests, requires tsx)
 node dist/index.js   # Run standalone server
 node dist/index.js --mcp   # Run as MCP server
 ```
@@ -14,12 +14,13 @@ node dist/index.js --mcp   # Run as MCP server
 ## Architecture
 
 - `src/index.ts` — CLI entry point, arg parsing
-- `src/mcp.ts` — MCP server with 5 tools (capture_photo, wait_for_photo, get_latest_photo, list_photos, send_to_phone)
+- `src/mcp.ts` — MCP server with 7 tools (capture_photo, wait_for_photo, get_latest_photo, list_photos, send_to_phone, start_livestream, get_live_frame)
 - `src/server.ts` — HTTP server (serves mobile page, handles uploads, SSE push)
 - `src/mobile-page.ts` — Self-contained HTML for phone camera capture, annotation canvas, content display
 - `src/storage.ts` — Photo file management (save, list, get latest, get by filename)
 - `src/network.ts` — Local IP detection
 - `src/token.ts` — Session token generation/validation
+- `src/cert.ts` — Self-signed certificate generation for HTTPS livestream
 - `src/types.ts` — Shared interfaces
 
 ## Tests
@@ -32,6 +33,7 @@ Co-located with source: `src/*.test.ts`. Run with `npm test`.
 - `network.test.ts` — IPv4 detection contract
 - `mobile-page.test.ts` — HTML rendering, element presence, token embedding
 - `server.test.ts` — HTTP endpoints, auth, uploads, waitForPhoto, CORS, performance
+- `cert.test.ts` — Certificate generation, validation, SAN matching
 
 ## Key Patterns
 
@@ -45,3 +47,5 @@ Co-located with source: `src/*.test.ts`. Run with `npm test`.
 - Mobile page is a self-contained HTML string (no static files)
 - `sendToPhone()` broadcasts content-push SSE events for bidirectional messaging
 - Annotation canvas composites drawings onto photos client-side before upload
+- HTTPS server (port+1) enables getUserMedia for live camera streaming
+- Live frames stored in memory only (not disk) for ephemeral video streaming

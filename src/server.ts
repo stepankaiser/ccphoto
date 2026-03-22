@@ -1,18 +1,21 @@
 import http from "node:http";
+import https from "node:https";
 import { URL } from "node:url";
 import Busboy from "busboy";
 import { renderMobilePage } from "./mobile-page.js";
 import { validateToken } from "./token.js";
 import { savePhoto, ensureOutputDir } from "./storage.js";
-import type { PhotoMeta, ServerConfig, OutgoingMessage } from "./types.js";
+import type { PhotoMeta, ServerConfig, OutgoingMessage, FrameData, CertPems } from "./types.js";
 
 type PhotoListener = (meta: PhotoMeta) => void;
 
 let server: http.Server | null = null;
+let httpsServer: https.Server | null = null;
 let config: ServerConfig | null = null;
 const photoListeners: PhotoListener[] = [];
 // Buffer for photos that arrive when no listener is waiting (race condition fix)
 let pendingPhoto: PhotoMeta | null = null;
+let latestFrame: FrameData | null = null;
 const sseClients = new Set<http.ServerResponse>();
 
 export function waitForPhoto(timeoutMs: number): Promise<PhotoMeta | null> {
@@ -214,8 +217,156 @@ function handleRequest(
     return;
   }
 
+  if (req.method === "POST" && url.pathname === "/frame") {
+    handleFrameUpload(req, res, cfg);
+    return;
+  }
+
   res.writeHead(404, { "Content-Type": "text/plain" });
   res.end("Not Found");
+}
+
+function handleFrameUpload(
+  req: http.IncomingMessage,
+  res: http.ServerResponse,
+  cfg: ServerConfig,
+): void {
+  const url = new URL(req.url ?? "/", `http://${req.headers.host}`);
+
+  if (!checkToken(url, cfg.token)) {
+    res.writeHead(403, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ error: "Forbidden" }));
+    return;
+  }
+
+  const chunks: Buffer[] = [];
+  let totalSize = 0;
+  const MAX_FRAME_SIZE = 2 * 1024 * 1024; // 2MB
+
+  req.on("data", (chunk: Buffer) => {
+    totalSize += chunk.length;
+    if (totalSize <= MAX_FRAME_SIZE) {
+      chunks.push(chunk);
+    }
+  });
+
+  req.on("end", () => {
+    if (totalSize > MAX_FRAME_SIZE) {
+      res.writeHead(413, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Frame too large" }));
+      return;
+    }
+
+    const data = Buffer.concat(chunks);
+    const w = parseInt(url.searchParams.get("w") ?? "0", 10);
+    const h = parseInt(url.searchParams.get("h") ?? "0", 10);
+
+    latestFrame = {
+      data,
+      timestamp: new Date(),
+      width: w,
+      height: h,
+      mimeType: "image/jpeg",
+    };
+
+    res.writeHead(200, {
+      "Content-Type": "application/json",
+      "Access-Control-Allow-Origin": "*",
+    });
+    res.end(JSON.stringify({ ok: true, timestamp: latestFrame.timestamp.toISOString() }));
+  });
+}
+
+function handleHttpsRequest(
+  req: http.IncomingMessage,
+  res: http.ServerResponse,
+  cfg: ServerConfig,
+): void {
+  const url = new URL(req.url ?? "/", `https://${req.headers.host}`);
+
+  if (req.method === "OPTIONS") {
+    res.writeHead(204, {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type",
+    });
+    res.end();
+    return;
+  }
+
+  if (req.method === "GET" && url.pathname === "/") {
+    if (!checkToken(url, cfg.token)) {
+      res.writeHead(403, { "Content-Type": "text/plain" });
+      res.end("Forbidden");
+      return;
+    }
+    const frameUrl = `https://${cfg.host}:${cfg.httpsPort}/frame`;
+    const html = renderMobilePage(cfg.token, frameUrl, { liveMode: true });
+    res.writeHead(200, {
+      "Content-Type": "text/html; charset=utf-8",
+      "Cache-Control": "no-store",
+    });
+    res.end(html);
+    return;
+  }
+
+  if (req.method === "POST" && url.pathname === "/frame") {
+    handleFrameUpload(req, res, cfg);
+    return;
+  }
+
+  if (req.method === "GET" && url.pathname === "/health") {
+    res.writeHead(200, { "Content-Type": "text/plain" });
+    res.end("ok");
+    return;
+  }
+
+  if (req.method === "GET" && url.pathname === "/events") {
+    handleEvents(req, res, cfg);
+    return;
+  }
+
+  res.writeHead(404, { "Content-Type": "text/plain" });
+  res.end("Not Found");
+}
+
+export async function startHttpsServer(cfg: ServerConfig, certs: CertPems): Promise<ServerConfig> {
+  if (httpsServer) return config!;
+
+  const httpsPort = cfg.httpsPort ?? cfg.port + 1;
+  cfg.httpsPort = httpsPort;
+
+  return new Promise((resolve, reject) => {
+    const s = https.createServer(
+      { key: certs.key, cert: certs.cert },
+      (req, res) => handleHttpsRequest(req, res, cfg),
+    );
+
+    s.on("error", (err: NodeJS.ErrnoException) => {
+      if (err.code === "EADDRINUSE") {
+        cfg.httpsPort = (cfg.httpsPort ?? httpsPort) + 1;
+        s.listen(cfg.httpsPort, "0.0.0.0");
+      } else {
+        reject(err);
+      }
+    });
+
+    s.on("listening", () => {
+      httpsServer = s;
+      config = cfg;
+      resolve(cfg);
+    });
+
+    s.listen(httpsPort, "0.0.0.0");
+  });
+}
+
+export function getLatestFrame(): FrameData | null {
+  return latestFrame;
+}
+
+export function isHttpsServerRunning(): boolean {
+  return httpsServer !== null;
 }
 
 export function isServerRunning(): boolean {
@@ -275,6 +426,7 @@ export function sendToPhone(message: OutgoingMessage): boolean {
 
 export function _resetState(): void {
   pendingPhoto = null;
+  latestFrame = null;
   photoListeners.length = 0;
   for (const client of sseClients) {
     client.end();
@@ -283,6 +435,11 @@ export function _resetState(): void {
 }
 
 export function stopServer(): void {
+  if (httpsServer) {
+    httpsServer.close();
+    httpsServer = null;
+  }
+  latestFrame = null;
   if (server) {
     for (const client of sseClients) {
       client.end();

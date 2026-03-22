@@ -66,6 +66,15 @@ before sending it. Use colored pens (red, blue, green, white) to circle componen
 draw arrows, or highlight areas of interest. Tap "Send" to upload the annotated
 image, or "Skip" to send the original photo without annotations.
 
+### Live Video Assistant
+
+Start a semi-real-time video stream from your phone camera. Claude watches the
+live feed (one frame every 3 seconds) and provides guidance in real-time -- point
+the camera where Claude asks, and receive instructions on your phone screen.
+
+Requires HTTPS (for camera access). On Android Chrome, accept the certificate
+warning once. Currently Android/Chrome only; iOS support planned.
+
 ## Installation
 
 ### npx (recommended, no install)
@@ -106,6 +115,8 @@ claude mcp add ccphoto -- npx ccphoto --mcp
 | `get_latest_photo` | Return the most recent photo, or a specific photo by filename. | `filename` (optional) |
 | `list_photos` | List all captured photos with filenames, timestamps, and sizes. | -- |
 | `send_to_phone` | Send text (markdown) or images to the phone display. The phone becomes a reference screen for instructions, diagrams, or pinouts. | `text` (optional), `image_base64` (optional), `image_mime_type` (optional) |
+| `start_livestream` | Start a live video stream from the phone camera. Generates HTTPS certificate and returns QR code. | -- |
+| `get_live_frame` | Get the latest frame from the live camera stream with freshness timestamp. | -- |
 
 ## Standalone CLI Mode
 
@@ -177,7 +188,7 @@ personal hotspot or home network instead.
 npm install          # Install dependencies
 npm run build        # Compile TypeScript
 npm run dev          # Watch mode (recompile on change)
-npm test             # Run the test suite (48 tests)
+npm test             # Run the test suite (70 tests)
 ```
 
 Tests use the Node.js built-in test runner and require the `tsx` dev dependency
@@ -199,9 +210,8 @@ src/
 
 ## Roadmap
 
-- **Video / livestream** -- Stream live video from the phone camera so Claude can
-  watch in real-time as you wire up a circuit or debug hardware. Requires HTTPS
-  (getUserMedia) and will be added in a future release.
+- **iOS live video support** -- Live video streaming currently works on
+  Android/Chrome. iOS Safari support is planned for a future release.
 
 ## Contributing
 

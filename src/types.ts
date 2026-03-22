@@ -11,10 +11,24 @@ export interface ServerConfig {
   outputDir: string;
   token: string;
   host: string;
+  httpsPort?: number;
 }
 
 export interface OutgoingMessage {
   text?: string;
   imageData?: string;
   mimeType?: string;
+}
+
+export interface FrameData {
+  data: Buffer;
+  timestamp: Date;
+  width: number;
+  height: number;
+  mimeType: string;
+}
+
+export interface CertPems {
+  key: string;
+  cert: string;
 }

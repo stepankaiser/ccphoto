@@ -5,9 +5,10 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import qrcode from "qrcode-terminal";
-import { startServer, isServerRunning, getServerConfig, waitForPhoto, requestPhoto, hasConnectedClients, sendToPhone } from "./server.js";
+import { startServer, isServerRunning, getServerConfig, waitForPhoto, requestPhoto, hasConnectedClients, sendToPhone, startHttpsServer, isHttpsServerRunning, getLatestFrame } from "./server.js";
 import { getLocalIPv4 } from "./network.js";
 import { generateToken } from "./token.js";
+import { ensureCerts } from "./cert.js";
 import { listPhotos, getLatestPhoto, getPhotoByFilename } from "./storage.js";
 import type { OutgoingMessage } from "./types.js";
 
@@ -259,6 +260,73 @@ export async function runMcpServer(): Promise<void> {
 
       return {
         content: [{ type: "text" as const, text: `Sent to phone: ${parts.join(" + ")}` }],
+      };
+    },
+  );
+
+  server.tool(
+    "start_livestream",
+    "Start a semi-real-time video stream from the phone camera. The phone streams frames every 3 seconds which you can view with get_live_frame. Requires HTTPS — Android users click 'Proceed' past the cert warning (one-time). After starting, call get_live_frame repeatedly to see what the camera sees, and send_to_phone to show guidance on the phone screen. CRITICAL: Show the QR code in your response text inside a code block.",
+    {},
+    async () => {
+      // Ensure HTTP server is running first
+      const httpUrl = await ensureServer();
+
+      const host = getServerConfig()!.host;
+      const certs = await ensureCerts(host);
+
+      const cfg = getServerConfig()!;
+      await startHttpsServer(cfg, certs);
+
+      const httpsUrl = `https://${cfg.host}:${cfg.httpsPort}/?token=${cfg.token}`;
+      const qrText = generateQRText(httpsUrl);
+
+      process.stderr.write(`[ccphoto] Livestream HTTPS server ready on port ${cfg.httpsPort}\n`);
+
+      return {
+        content: [
+          {
+            type: "text" as const,
+            text: `Livestream ready! Phone needs to open the HTTPS URL below.\n\nOn Android Chrome: tap "Advanced" then "Proceed" when you see the certificate warning (one-time).\n\nQR_CODE:\n${qrText}\nURL: ${httpsUrl}\n\nAfter the phone connects and grants camera access, call get_live_frame to see what the camera sees.`,
+          },
+        ],
+      };
+    },
+  );
+
+  server.tool(
+    "get_live_frame",
+    "Get the latest frame from the phone's live camera stream. Returns the most recent frame as an image with a timestamp showing how fresh it is. Call this repeatedly to monitor what the camera sees in semi-real-time. Use send_to_phone to display guidance on the phone screen.",
+    {},
+    async () => {
+      const frame = getLatestFrame();
+
+      if (!frame) {
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: "No frames received yet. Make sure the phone is connected in live mode. Use start_livestream to begin.",
+            },
+          ],
+        };
+      }
+
+      const ageMs = Date.now() - frame.timestamp.getTime();
+      const base64 = frame.data.toString("base64");
+
+      return {
+        content: [
+          {
+            type: "image" as const,
+            data: base64,
+            mimeType: frame.mimeType,
+          },
+          {
+            type: "text" as const,
+            text: `Live frame (${(frame.data.length / 1024).toFixed(0)} KB) — ${ageMs < 10000 ? "fresh" : "stale"} (${(ageMs / 1000).toFixed(1)}s ago)${frame.width ? ` — ${frame.width}x${frame.height}` : ""}`,
+          },
+        ],
       };
     },
   );
