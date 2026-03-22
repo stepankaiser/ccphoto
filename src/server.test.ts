@@ -366,4 +366,25 @@ describe("frame endpoint", () => {
     });
     assert.equal(res.status, 403);
   });
+
+  it("POST /mode-switch with voice_message resolves waitForPhoto", async () => {
+    await boot();
+    const waitPromise = waitForPhoto(5000);
+
+    await request({
+      port,
+      path: `/mode-switch?token=${token}`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: Buffer.from(JSON.stringify({
+        action: "voice_message",
+        text: "What am I looking at?",
+        confidence: 0.92,
+      })),
+    });
+
+    const result = await waitPromise;
+    assert.ok(result);
+    assert.ok("action" in result!);
+  });
 });

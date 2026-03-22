@@ -601,6 +601,70 @@ export function renderMobilePage(token: string): string {
     .stop-btn:active {
       background: rgba(239, 68, 68, 0.15);
     }
+
+    .voice-btn {
+      position: fixed;
+      bottom: 56px;
+      right: 16px;
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      border: none;
+      background: #333;
+      color: #aaa;
+      font-size: 24px;
+      cursor: pointer;
+      touch-action: manipulation;
+      -webkit-appearance: none;
+      z-index: 120;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+      transition: background 0.2s, transform 0.1s;
+    }
+
+    .voice-btn:active {
+      transform: scale(0.95);
+    }
+
+    .voice-btn.listening {
+      background: #ef4444;
+      color: #fff;
+      animation: voicePulse 1.2s ease-in-out infinite;
+    }
+
+    .voice-btn.processing {
+      background: #f59e0b;
+      color: #fff;
+    }
+
+    .voice-btn.hidden {
+      display: none;
+    }
+
+    @keyframes voicePulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.5); }
+      50% { box-shadow: 0 0 0 12px rgba(239, 68, 68, 0); }
+    }
+
+    .voice-status {
+      position: fixed;
+      bottom: 120px;
+      right: 16px;
+      background: rgba(30, 30, 30, 0.9);
+      -webkit-backdrop-filter: blur(8px);
+      backdrop-filter: blur(8px);
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 6px 12px;
+      color: #ddd;
+      font-size: 12px;
+      z-index: 120;
+      max-width: 200px;
+      text-align: center;
+      pointer-events: none;
+    }
   </style>
 </head>
 <body>
@@ -635,6 +699,16 @@ export function renderMobilePage(token: string): string {
 
   <!-- Toast container -->
   <div class="toast-container" id="toast-container"></div>
+
+  <button class="voice-btn hidden" id="voice-btn" type="button" aria-label="Voice message">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+      <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+      <line x1="12" y1="19" x2="12" y2="23"/>
+      <line x1="8" y1="23" x2="16" y2="23"/>
+    </svg>
+  </button>
+  <div class="voice-status" id="voice-status" style="display:none;"></div>
 
   <!-- Status bar -->
   <div class="status-bar">
@@ -1054,6 +1128,17 @@ export function renderMobilePage(token: string): string {
 
         // Show toast
         showToast(data);
+
+        // TTS: speak the message if requested
+        if (data.speak && data.text && window.speechSynthesis) {
+          speechSynthesis.cancel();
+          setTimeout(function() {
+            var utterance = new SpeechSynthesisUtterance(data.text);
+            utterance.rate = 1.0;
+            utterance.pitch = 1.0;
+            speechSynthesis.speak(utterance);
+          }, 50);
+        }
       });
 
       evtSource.addEventListener('switch-to-live', function() {
@@ -1349,6 +1434,101 @@ export function renderMobilePage(token: string): string {
           document.body.removeChild(annotationOverlay);
           annotationOverlay = null;
         }
+      }
+
+      // --- Voice: Speech-to-Text + Text-to-Speech ---
+      var SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      var voiceBtn = document.getElementById('voice-btn');
+      var voiceStatusEl = document.getElementById('voice-status');
+      var voiceRecognition = null;
+      var voiceActive = false;
+
+      if (SpeechRecognition) {
+        voiceBtn.classList.remove('hidden');
+
+        voiceRecognition = new SpeechRecognition();
+        voiceRecognition.continuous = false;
+        voiceRecognition.interimResults = false;
+        voiceRecognition.lang = '';
+        voiceRecognition.maxAlternatives = 1;
+
+        voiceBtn.addEventListener('click', function() {
+          if (voiceActive) {
+            voiceRecognition.abort();
+            resetVoiceState();
+            return;
+          }
+
+          voiceActive = true;
+          voiceBtn.classList.add('listening');
+          showVoiceStatus('Listening...');
+
+          try {
+            voiceRecognition.start();
+          } catch (e) {
+            resetVoiceState();
+          }
+        });
+
+        voiceRecognition.onresult = function(event) {
+          var transcript = event.results[0][0].transcript;
+          var confidence = event.results[0][0].confidence;
+
+          voiceBtn.classList.remove('listening');
+          voiceBtn.classList.add('processing');
+          showVoiceStatus(transcript.length > 40 ? transcript.substring(0, 40) + '...' : transcript);
+
+          fetch(origin + '/mode-switch?token=' + encodeURIComponent(token), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              action: 'voice_message',
+              text: transcript,
+              confidence: confidence
+            })
+          })
+          .then(function(res) {
+            if (!res.ok) throw new Error('Send failed');
+            showVoiceStatus('Sent!');
+            setTimeout(resetVoiceState, 1500);
+          })
+          .catch(function() {
+            showVoiceStatus('Failed to send');
+            setTimeout(resetVoiceState, 2000);
+          });
+        };
+
+        voiceRecognition.onerror = function(event) {
+          var msg = 'Error';
+          if (event.error === 'no-speech') msg = 'No speech detected';
+          else if (event.error === 'not-allowed') msg = 'Mic access denied';
+          else if (event.error === 'network') msg = 'Need internet for voice';
+          else if (event.error === 'aborted') { resetVoiceState(); return; }
+
+          showVoiceStatus(msg);
+          setTimeout(resetVoiceState, 2000);
+        };
+
+        voiceRecognition.onend = function() {
+          if (voiceActive && voiceBtn.classList.contains('listening')) {
+            resetVoiceState();
+          }
+        };
+      }
+
+      function resetVoiceState() {
+        voiceActive = false;
+        voiceBtn.classList.remove('listening', 'processing');
+        hideVoiceStatus();
+      }
+
+      function showVoiceStatus(text) {
+        voiceStatusEl.textContent = text;
+        voiceStatusEl.style.display = '';
+      }
+
+      function hideVoiceStatus() {
+        voiceStatusEl.style.display = 'none';
       }
     })();
   </script>

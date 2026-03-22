@@ -6,7 +6,7 @@ Phone camera bridge for Claude Code — MCP server + standalone CLI.
 
 ```bash
 npm run build        # Compile TypeScript
-npm test             # Run tests (70 tests, requires tsx)
+npm test             # Run tests (87 tests, requires tsx)
 node dist/index.js   # Run standalone server
 node dist/index.js --mcp   # Run as MCP server
 ```
@@ -14,7 +14,7 @@ node dist/index.js --mcp   # Run as MCP server
 ## Architecture
 
 - `src/index.ts` — CLI entry point, arg parsing
-- `src/mcp.ts` — MCP server with 7 tools (capture_photo, wait_for_photo, get_latest_photo, list_photos, send_to_phone, start_livestream, get_live_frame)
+- `src/mcp.ts` — MCP server with 7 tools (capture_photo, wait_for_photo, get_latest_photo, list_photos, send_to_phone (supports `speak` param for TTS), start_livestream, get_live_frame)
 - `src/server.ts` — HTTP server (serves mobile page, handles uploads, SSE push)
 - `src/mobile-page.ts` — Self-contained HTML for phone camera capture, annotation canvas, content display
 - `src/storage.ts` — Photo file management (save, list, get latest, get by filename)
@@ -49,3 +49,6 @@ Co-located with source: `src/*.test.ts`. Run with `npm test`.
 - Annotation canvas composites drawings onto photos client-side before upload
 - HTTPS server (port+1) enables getUserMedia for live camera streaming
 - Live frames stored in memory only (not disk) for ephemeral video streaming
+- Voice input via Web Speech API (SpeechRecognition) on phone, sent as UserAction to server
+- TTS via SpeechSynthesis when `send_to_phone` includes `speak: true`
+- Two-tier server: HTTP for photos (no cert warning), HTTPS for live/voice (getUserMedia needs secure context)

@@ -13,12 +13,10 @@ phone's browser camera does all the work.
 
 ```
  +----------+        WiFi        +-----------+       MCP        +-------------+
- |          | ----------------> |           | ---------------> |             |
- |  Phone   |    scan QR code   |  CCPhoto  |   image data     |  Claude     |
- |  Camera  | ----------------> |  Server   | ---------------> |  Code       |
- |          |   photo upload    |           |                  |             |
- +----------+                   +-----------+                  +-------------+
-                                 (local HTTP)
+ |  Phone   |  photos, voice,   |  CCPhoto  |   image/text     |  Claude     |
+ |  Camera  |  mode switches    |  Server   |   data            |  Code       |
+ |  + Mic   | <--------------- |  (local)  | <--------------- |             |
+ +----------+   TTS, guidance   +-----------+   send_to_phone  +-------------+
 ```
 
 ## Quick Start
@@ -75,6 +73,17 @@ the camera where Claude asks, and receive instructions on your phone screen.
 Requires HTTPS (for camera access). On Android Chrome, accept the certificate
 warning once. Currently Android/Chrome only; iOS support planned.
 
+### Voice Interaction
+
+Tap the microphone button on your phone to speak to Claude. Speech is
+transcribed using the browser's built-in Speech Recognition API and sent as
+text. Claude can respond with spoken audio using `send_to_phone` with
+`speak: true` -- the phone speaks the response aloud via Text-to-Speech.
+
+This enables hands-free workflows: ask a question while holding a soldering
+iron, and hear the answer without looking at a screen. The mic button
+appears only on browsers that support Speech Recognition (Android Chrome).
+
 ## Installation
 
 ### npx (recommended, no install)
@@ -114,7 +123,7 @@ claude mcp add ccphoto -- npx ccphoto --mcp
 | `wait_for_photo` | Block until a photo is uploaded or the timeout expires. Call this immediately after `capture_photo`. | `timeout_seconds` (optional, default: 120) |
 | `get_latest_photo` | Return the most recent photo, or a specific photo by filename. | `filename` (optional) |
 | `list_photos` | List all captured photos with filenames, timestamps, and sizes. | -- |
-| `send_to_phone` | Send text (markdown) or images to the phone display. The phone becomes a reference screen for instructions, diagrams, or pinouts. | `text` (optional), `image_base64` (optional), `image_mime_type` (optional) |
+| `send_to_phone` | Send text (markdown) or images to the phone display. The phone becomes a reference screen for instructions, diagrams, or pinouts. | `text` (optional), `image_base64` (optional), `image_mime_type` (optional), `speak` (optional, boolean) |
 | `start_livestream` | Start a live video stream from the phone camera. Generates HTTPS certificate and returns QR code. | -- |
 | `get_live_frame` | Get the latest frame from the live camera stream with freshness timestamp. | -- |
 
@@ -188,7 +197,7 @@ personal hotspot or home network instead.
 npm install          # Install dependencies
 npm run build        # Compile TypeScript
 npm run dev          # Watch mode (recompile on change)
-npm test             # Run the test suite (70 tests)
+npm test             # Run the test suite (87 tests)
 ```
 
 Tests use the Node.js built-in test runner and require the `tsx` dev dependency
@@ -210,8 +219,17 @@ src/
 
 ## Roadmap
 
+- **Real domain + Let's Encrypt certs** -- Use a registered domain with valid
+  certificates for zero browser warnings on any device, including iOS Safari.
 - **iOS live video support** -- Live video streaming currently works on
-  Android/Chrome. iOS Safari support is planned for a future release.
+  Android/Chrome. iOS Safari support requires trusted certificates.
+- **AR overlays on camera feed** -- Draw annotations directly on the live
+  camera view in real-time.
+- **Multi-camera support** -- Connect multiple phones simultaneously for
+  different viewing angles.
+- **npm publish to registry** -- Make CCPhoto installable via `npx ccphoto`.
+- **WebRTC streaming** -- Replace HTTP frame polling with WebRTC when Claude's
+  vision processing latency improves.
 
 ## Contributing
 

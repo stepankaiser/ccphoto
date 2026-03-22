@@ -28,9 +28,9 @@ function generateQRText(url: string): string {
 }
 
 async function ensureServer(): Promise<string> {
-  if (isHttpsServerRunning()) {
+  if (isServerRunning()) {
     const cfg = getServerConfig()!;
-    return `https://${cfg.host}:${cfg.httpsPort}/?token=${cfg.token}`;
+    return `http://${cfg.host}:${cfg.port}/?token=${cfg.token}`;
   }
 
   const host = getLocalIPv4();
@@ -41,17 +41,28 @@ async function ensureServer(): Promise<string> {
   }
 
   const token = generateToken();
-  const certs = await ensureCerts(host);
-  const cfg = await startHttpsServer(
-    {
-      port: DEFAULT_PORT,
-      outputDir: getOutputDir(),
-      token,
-      host,
-      httpsPort: DEFAULT_PORT,
-    },
-    certs,
-  );
+  const cfg = await startServer({
+    port: DEFAULT_PORT,
+    outputDir: getOutputDir(),
+    token,
+    host,
+  });
+
+  return `http://${cfg.host}:${cfg.port}/?token=${cfg.token}`;
+}
+
+async function ensureHttpsServer(): Promise<string> {
+  // Ensure HTTP server is running first (shares config/token)
+  await ensureServer();
+
+  if (isHttpsServerRunning()) {
+    const cfg = getServerConfig()!;
+    return `https://${cfg.host}:${cfg.httpsPort}/?token=${cfg.token}`;
+  }
+
+  const cfg = getServerConfig()!;
+  const certs = await ensureCerts(cfg.host);
+  await startHttpsServer(cfg, certs);
 
   return `https://${cfg.host}:${cfg.httpsPort}/?token=${cfg.token}`;
 }
@@ -64,10 +75,10 @@ export async function runMcpServer(): Promise<void> {
 
   server.tool(
     "capture_photo",
-    "Start the camera server and return a QR code for the user to scan with their phone. The server stays running for the entire session — the user only needs to scan once, then they can take photos anytime and switch between Photo and Live modes. If a phone is already connected, it will be notified that a photo is requested (the button will pulse). On Android Chrome, the user needs to tap Advanced then Proceed past the certificate warning (one-time). CRITICAL: You MUST paste the QR code directly in your response text (inside a code block) so the user can see and scan it. After showing the QR, IMMEDIATELY call wait_for_photo to receive the photo.",
+    "Start the camera server and return a QR code for the user to scan with their phone. The server stays running for the entire session — the user only needs to scan once, then they can take photos anytime and switch between Photo and Live modes. If a phone is already connected, it will be notified that a photo is requested (the button will pulse). CRITICAL: You MUST paste the QR code directly in your response text (inside a code block) so the user can see and scan it. After showing the QR, IMMEDIATELY call wait_for_photo to receive the photo.",
     {},
     async () => {
-      const alreadyRunning = isHttpsServerRunning();
+      const alreadyRunning = isServerRunning();
       const url = await ensureServer();
 
       if (alreadyRunning && hasConnectedClients()) {
@@ -105,11 +116,9 @@ export async function runMcpServer(): Promise<void> {
     },
     async ({ timeout_seconds }) => {
       const timeoutMs = (timeout_seconds ?? 120) * 1000;
-      const url = isHttpsServerRunning()
-        ? `https://${getServerConfig()!.host}:${getServerConfig()!.httpsPort}/?token=${getServerConfig()!.token}`
-        : isServerRunning()
-          ? `http://${getServerConfig()!.host}:${getServerConfig()!.port}/?token=${getServerConfig()!.token}`
-          : null;
+      const url = isServerRunning()
+        ? `http://${getServerConfig()!.host}:${getServerConfig()!.port}/?token=${getServerConfig()!.token}`
+        : null;
 
       const result = await waitForPhoto(timeoutMs);
 
@@ -127,6 +136,15 @@ export async function runMcpServer(): Promise<void> {
       // Check if this is a user action (has 'action' property) rather than a photo
       if ("action" in result) {
         const action = result.action;
+        if (action === "voice_message") {
+          const text = (result.data as Record<string, unknown>)?.text as string || "(empty)";
+          return {
+            content: [{
+              type: "text" as const,
+              text: `Voice from phone: ${text}`,
+            }],
+          };
+        }
         if (action === "start_livestream") {
           return {
             content: [
@@ -257,8 +275,9 @@ export async function runMcpServer(): Promise<void> {
       text: z.string().optional().describe("Text content to display. Supports basic markdown: **bold**, `code`, # headers, - lists, ```code blocks```."),
       image_base64: z.string().optional().describe("Base64-encoded image data to display on the phone."),
       image_mime_type: z.string().optional().describe("MIME type of the image (e.g. 'image/png'). Required when image_base64 is provided."),
+      speak: z.boolean().optional().describe("If true, the phone will speak the text aloud using text-to-speech."),
     },
-    async ({ text, image_base64, image_mime_type }) => {
+    async ({ text, image_base64, image_mime_type, speak }) => {
       if (!text && !image_base64) {
         return {
           content: [{ type: "text" as const, text: "Error: provide at least 'text' or 'image_base64'." }],
@@ -283,12 +302,14 @@ export async function runMcpServer(): Promise<void> {
         message.imageData = image_base64;
         message.mimeType = image_mime_type;
       }
+      if (speak) message.speak = true;
 
       sendToPhone(message);
 
       const parts: string[] = [];
       if (text) parts.push(`text (${text.length} chars)`);
       if (image_base64) parts.push(`image (${image_mime_type})`);
+      if (speak) parts.push("(spoken)");
 
       return {
         content: [{ type: "text" as const, text: `Sent to phone: ${parts.join(" + ")}` }],
@@ -301,28 +322,24 @@ export async function runMcpServer(): Promise<void> {
     "Start a semi-real-time video stream from the phone camera. If a phone is already connected, it switches to live mode automatically (no new QR needed). The phone streams frames every 3 seconds. Call get_live_frame to see what the camera sees, and send_to_phone to show guidance on the phone screen. CRITICAL: If showing a QR code, paste it in your response text inside a code block.",
     {},
     async () => {
-      const url = await ensureServer();
+      const httpsUrl = await ensureHttpsServer();
 
       if (hasConnectedClients()) {
         switchToLiveMode();
         return {
-          content: [
-            {
-              type: "text" as const,
-              text: "Phone has been switched to Live mode. The camera viewfinder is now active and streaming frames every 3 seconds. Call get_live_frame to see what the camera sees.",
-            },
-          ],
+          content: [{
+            type: "text" as const,
+            text: "Phone has been switched to Live mode. The camera viewfinder is now active and streaming frames every 3 seconds. Call get_live_frame to see what the camera sees.",
+          }],
         };
       }
 
-      const qrText = generateQRText(url);
+      const qrText = generateQRText(httpsUrl);
       return {
-        content: [
-          {
-            type: "text" as const,
-            text: `Livestream ready! Scan the QR code to connect your phone.\n\nOn Android Chrome: tap "Advanced" then "Proceed" past the certificate warning (one-time).\n\nQR_CODE:\n${qrText}\nURL: ${url}\n\nAfter connecting, the phone will be in Photo mode by default — it will automatically switch to Live mode. Call get_live_frame to see what the camera sees.`,
-          },
-        ],
+        content: [{
+          type: "text" as const,
+          text: `Livestream ready! Scan the QR code to connect.\n\nOn Android Chrome: tap "Advanced" then "Proceed" past the certificate warning (one-time).\n\nQR_CODE:\n${qrText}\nURL: ${httpsUrl}\n\nAfter connecting, call get_live_frame to see what the camera sees.`,
+        }],
       };
     },
   );

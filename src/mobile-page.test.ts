@@ -146,4 +146,41 @@ describe("renderMobilePage", () => {
   it("contains clearRequestState function", () => {
     assert.ok(html.includes("clearRequestState"));
   });
+
+  // ---- Voice ---------------------------------------------------------------
+
+  it("contains voice button", () => {
+    assert.ok(html.includes("voice-btn"));
+    assert.ok(html.includes('aria-label="Voice message"'));
+  });
+
+  it("contains SpeechRecognition feature detection", () => {
+    assert.ok(html.includes("webkitSpeechRecognition"));
+  });
+
+  it("contains voice status element", () => {
+    assert.ok(html.includes("voice-status"));
+  });
+
+  it("posts voice_message to mode-switch", () => {
+    assert.ok(html.includes("voice_message"));
+  });
+
+  it("contains speechSynthesis for TTS", () => {
+    assert.ok(html.includes("speechSynthesis"));
+    assert.ok(html.includes("SpeechSynthesisUtterance"));
+  });
+
+  it("hides voice button when unsupported", () => {
+    assert.ok(html.includes('class="voice-btn hidden"'));
+  });
+
+  it("contains voice pulse animation", () => {
+    assert.ok(html.includes("voicePulse"));
+  });
+
+  it("contains microphone SVG icon", () => {
+    assert.ok(html.includes("<svg"));
+    assert.ok(html.includes("M12 1a3 3"));
+  });
 });

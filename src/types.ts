@@ -18,6 +18,7 @@ export interface OutgoingMessage {
   text?: string;
   imageData?: string;
   mimeType?: string;
+  speak?: boolean;
 }
 
 export interface FrameData {
