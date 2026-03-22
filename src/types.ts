@@ -12,3 +12,9 @@ export interface ServerConfig {
   token: string;
   host: string;
 }
+
+export interface OutgoingMessage {
+  text?: string;
+  imageData?: string;
+  mimeType?: string;
+}

@@ -13,6 +13,7 @@ import {
   waitForPhoto,
   requestPhoto,
   hasConnectedClients,
+  sendToPhone,
   _resetState,
 } from "./server.js";
 import { generateToken } from "./token.js";
@@ -299,5 +300,21 @@ describe("server", () => {
       const files = fs.readdirSync(tmpDir).filter((f) => f.endsWith(".jpg"));
       assert.equal(files.length, 5);
     });
+  });
+});
+
+describe("sendToPhone", () => {
+  afterEach(() => {
+    stopServer();
+    _resetState();
+    if (tmpDir && fs.existsSync(tmpDir)) {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  it("sendToPhone returns false when no clients connected", async () => {
+    await boot();
+    const result = sendToPhone({ text: "hello" });
+    assert.equal(result, false);
   });
 });

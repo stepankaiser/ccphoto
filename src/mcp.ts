@@ -5,10 +5,11 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import qrcode from "qrcode-terminal";
-import { startServer, isServerRunning, getServerConfig, waitForPhoto, requestPhoto, hasConnectedClients } from "./server.js";
+import { startServer, isServerRunning, getServerConfig, waitForPhoto, requestPhoto, hasConnectedClients, sendToPhone } from "./server.js";
 import { getLocalIPv4 } from "./network.js";
 import { generateToken } from "./token.js";
 import { listPhotos, getLatestPhoto, getPhotoByFilename } from "./storage.js";
+import type { OutgoingMessage } from "./types.js";
 
 const DEFAULT_OUTPUT_DIR = path.join(os.homedir(), ".ccphoto", "captures");
 const DEFAULT_PORT = 3847;
@@ -212,6 +213,52 @@ export async function runMcpServer(): Promise<void> {
             text: `${photos.length} photo(s) captured:\n\n${lines.join("\n")}\n\nDirectory: ${outputDir}`,
           },
         ],
+      };
+    },
+  );
+
+  server.tool(
+    "send_to_phone",
+    "Send text and/or an image to the connected phone display. The phone becomes a reference screen — useful for showing wiring instructions, pinout diagrams, code snippets, or reference images while the user works with both hands. Text supports basic markdown (headers, bold, code, lists). Requires a phone to be connected via capture_photo first.",
+    {
+      text: z.string().optional().describe("Text content to display. Supports basic markdown: **bold**, `code`, # headers, - lists, ```code blocks```."),
+      image_base64: z.string().optional().describe("Base64-encoded image data to display on the phone."),
+      image_mime_type: z.string().optional().describe("MIME type of the image (e.g. 'image/png'). Required when image_base64 is provided."),
+    },
+    async ({ text, image_base64, image_mime_type }) => {
+      if (!text && !image_base64) {
+        return {
+          content: [{ type: "text" as const, text: "Error: provide at least 'text' or 'image_base64'." }],
+        };
+      }
+
+      if (image_base64 && !image_mime_type) {
+        return {
+          content: [{ type: "text" as const, text: "Error: 'image_mime_type' is required when 'image_base64' is provided." }],
+        };
+      }
+
+      if (!isServerRunning() || !hasConnectedClients()) {
+        return {
+          content: [{ type: "text" as const, text: "No phone connected. Use capture_photo first to connect a phone." }],
+        };
+      }
+
+      const message: OutgoingMessage = {};
+      if (text) message.text = text;
+      if (image_base64) {
+        message.imageData = image_base64;
+        message.mimeType = image_mime_type;
+      }
+
+      sendToPhone(message);
+
+      const parts: string[] = [];
+      if (text) parts.push(`text (${text.length} chars)`);
+      if (image_base64) parts.push(`image (${image_mime_type})`);
+
+      return {
+        content: [{ type: "text" as const, text: `Sent to phone: ${parts.join(" + ")}` }],
       };
     },
   );

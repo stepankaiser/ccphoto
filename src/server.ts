@@ -4,7 +4,7 @@ import Busboy from "busboy";
 import { renderMobilePage } from "./mobile-page.js";
 import { validateToken } from "./token.js";
 import { savePhoto, ensureOutputDir } from "./storage.js";
-import type { PhotoMeta, ServerConfig } from "./types.js";
+import type { PhotoMeta, ServerConfig, OutgoingMessage } from "./types.js";
 
 type PhotoListener = (meta: PhotoMeta) => void;
 
@@ -262,6 +262,15 @@ export function requestPhoto(): void {
 
 export function hasConnectedClients(): boolean {
   return sseClients.size > 0;
+}
+
+export function sendToPhone(message: OutgoingMessage): boolean {
+  if (sseClients.size === 0) return false;
+  const payload = JSON.stringify(message);
+  for (const client of sseClients) {
+    client.write(`event: content-push\ndata: ${payload}\n\n`);
+  }
+  return true;
 }
 
 export function _resetState(): void {

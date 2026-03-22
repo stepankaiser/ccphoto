@@ -52,6 +52,20 @@ When your phone is already connected and Claude calls `capture_photo` again, the
 phone receives an SSE push notification. The capture button pulses to let you
 know Claude is waiting for a new photo. Just tap and shoot.
 
+### Bidirectional Messaging
+
+Claude can send content to your phone using the `send_to_phone` tool. Text, markdown,
+and images appear in a collapsible panel on the phone. This turns your phone into a
+reference screen -- Claude can display wiring instructions, pinout diagrams, or code
+snippets while you work with both hands.
+
+### Photo Annotations
+
+After taking a photo, an annotation screen appears where you can draw on the image
+before sending it. Use colored pens (red, blue, green, white) to circle components,
+draw arrows, or highlight areas of interest. Tap "Send" to upload the annotated
+image, or "Skip" to send the original photo without annotations.
+
 ## Installation
 
 ### npx (recommended, no install)
@@ -91,6 +105,7 @@ claude mcp add ccphoto -- npx ccphoto --mcp
 | `wait_for_photo` | Block until a photo is uploaded or the timeout expires. Call this immediately after `capture_photo`. | `timeout_seconds` (optional, default: 120) |
 | `get_latest_photo` | Return the most recent photo, or a specific photo by filename. | `filename` (optional) |
 | `list_photos` | List all captured photos with filenames, timestamps, and sizes. | -- |
+| `send_to_phone` | Send text (markdown) or images to the phone display. The phone becomes a reference screen for instructions, diagrams, or pinouts. | `text` (optional), `image_base64` (optional), `image_mime_type` (optional) |
 
 ## Standalone CLI Mode
 
@@ -181,6 +196,12 @@ src/
   token.ts        Session token generation and validation
   types.ts        Shared TypeScript interfaces
 ```
+
+## Roadmap
+
+- **Video / livestream** -- Stream live video from the phone camera so Claude can
+  watch in real-time as you wire up a circuit or debug hardware. Requires HTTPS
+  (getUserMedia) and will be added in a future release.
 
 ## Contributing
 

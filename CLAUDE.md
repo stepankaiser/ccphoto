@@ -14,9 +14,9 @@ node dist/index.js --mcp   # Run as MCP server
 ## Architecture
 
 - `src/index.ts` — CLI entry point, arg parsing
-- `src/mcp.ts` — MCP server with 4 tools (capture_photo, wait_for_photo, get_latest_photo, list_photos)
+- `src/mcp.ts` — MCP server with 5 tools (capture_photo, wait_for_photo, get_latest_photo, list_photos, send_to_phone)
 - `src/server.ts` — HTTP server (serves mobile page, handles uploads, SSE push)
-- `src/mobile-page.ts` — Self-contained HTML for phone camera capture
+- `src/mobile-page.ts` — Self-contained HTML for phone camera capture, annotation canvas, content display
 - `src/storage.ts` — Photo file management (save, list, get latest, get by filename)
 - `src/network.ts` — Local IP detection
 - `src/token.ts` — Session token generation/validation
@@ -43,3 +43,5 @@ Co-located with source: `src/*.test.ts`. Run with `npm test`.
 - `get_latest_photo` accepts optional `filename` param to retrieve specific photos
 - Photos stored in `~/.ccphoto/captures/` by default (or CCPHOTO_DIR env var)
 - Mobile page is a self-contained HTML string (no static files)
+- `sendToPhone()` broadcasts content-push SSE events for bidirectional messaging
+- Annotation canvas composites drawings onto photos client-side before upload
