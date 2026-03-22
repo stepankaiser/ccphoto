@@ -702,6 +702,12 @@ export function renderMobilePage(token: string): string {
         photoView.style.display = 'none';
         liveView.style.display = '';
         startLiveStream();
+        // Notify server so Claude knows user switched to live mode
+        fetch(origin + '/mode-switch?token=' + encodeURIComponent(token), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'start_livestream' })
+        }).catch(function() {});
       }
 
       // --- Photo mode ---

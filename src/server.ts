@@ -18,35 +18,60 @@ let pendingPhoto: PhotoMeta | null = null;
 let latestFrame: FrameData | null = null;
 const sseClients = new Set<http.ServerResponse>();
 
-export function waitForPhoto(timeoutMs: number): Promise<PhotoMeta | null> {
-  // Check if a photo already arrived before we started waiting
+// User action system — phone can trigger actions that resolve waitForPhoto
+export interface UserAction {
+  action: string;
+  data?: Record<string, unknown>;
+}
+type ActionListener = (action: UserAction) => void;
+const actionListeners: ActionListener[] = [];
+let pendingAction: UserAction | null = null;
+
+export function waitForPhoto(timeoutMs: number): Promise<PhotoMeta | null | UserAction> {
+  // Check if a photo or action already arrived before we started waiting
   if (pendingPhoto) {
     const meta = pendingPhoto;
     pendingPhoto = null;
     return Promise.resolve(meta);
   }
+  if (pendingAction) {
+    const action = pendingAction;
+    pendingAction = null;
+    return Promise.resolve(action);
+  }
 
   return new Promise((resolve) => {
     const timer = setTimeout(() => {
-      const idx = photoListeners.indexOf(listener);
-      if (idx !== -1) photoListeners.splice(idx, 1);
+      cleanup();
       resolve(null);
     }, timeoutMs);
 
-    function listener(meta: PhotoMeta) {
+    function cleanup() {
+      const photoIdx = photoListeners.indexOf(photoListener);
+      if (photoIdx !== -1) photoListeners.splice(photoIdx, 1);
+      const actionIdx = actionListeners.indexOf(actionListener);
+      if (actionIdx !== -1) actionListeners.splice(actionIdx, 1);
+    }
+
+    function photoListener(meta: PhotoMeta) {
       clearTimeout(timer);
-      const idx = photoListeners.indexOf(listener);
-      if (idx !== -1) photoListeners.splice(idx, 1);
+      cleanup();
       resolve(meta);
     }
 
-    photoListeners.push(listener);
+    function actionListener(action: UserAction) {
+      clearTimeout(timer);
+      cleanup();
+      resolve(action);
+    }
+
+    photoListeners.push(photoListener);
+    actionListeners.push(actionListener);
   });
 }
 
 function notifyPhotoListeners(meta: PhotoMeta): void {
   if (photoListeners.length === 0) {
-    // No one is listening yet — buffer it for the next waitForPhoto call
     pendingPhoto = meta;
     return;
   }
@@ -55,6 +80,51 @@ function notifyPhotoListeners(meta: PhotoMeta): void {
   for (const listener of listeners) {
     listener(meta);
   }
+}
+
+function notifyActionListeners(action: UserAction): void {
+  if (actionListeners.length === 0) {
+    pendingAction = action;
+    return;
+  }
+
+  const listeners = [...actionListeners];
+  for (const listener of listeners) {
+    listener(action);
+  }
+}
+
+function handleModeSwitch(
+  req: http.IncomingMessage,
+  res: http.ServerResponse,
+  cfg: ServerConfig,
+): void {
+  const url = new URL(req.url ?? "/", `http://${req.headers.host}`);
+
+  if (!checkToken(url, cfg.token)) {
+    res.writeHead(403, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ error: "Forbidden" }));
+    return;
+  }
+
+  const chunks: Buffer[] = [];
+  req.on("data", (chunk: Buffer) => chunks.push(chunk));
+  req.on("end", () => {
+    try {
+      const body = JSON.parse(Buffer.concat(chunks).toString());
+      const action: UserAction = { action: body.action ?? "unknown", data: body };
+      notifyActionListeners(action);
+
+      res.writeHead(200, {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+      });
+      res.end(JSON.stringify({ ok: true }));
+    } catch {
+      res.writeHead(400, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Invalid JSON" }));
+    }
+  });
 }
 
 function checkToken(url: URL, expected: string): boolean {
@@ -220,6 +290,11 @@ function handleUnifiedRequest(
     return;
   }
 
+  if (req.method === "POST" && url.pathname === "/mode-switch") {
+    handleModeSwitch(req, res, cfg);
+    return;
+  }
+
   res.writeHead(404, { "Content-Type": "text/plain" });
   res.end("Not Found");
 }
@@ -379,8 +454,10 @@ export function sendToPhone(message: OutgoingMessage): boolean {
 
 export function _resetState(): void {
   pendingPhoto = null;
+  pendingAction = null;
   latestFrame = null;
   photoListeners.length = 0;
+  actionListeners.length = 0;
   for (const client of sseClients) {
     client.end();
   }

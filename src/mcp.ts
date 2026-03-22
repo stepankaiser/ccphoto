@@ -96,7 +96,7 @@ export async function runMcpServer(): Promise<void> {
 
   server.tool(
     "wait_for_photo",
-    "Wait for a photo to be uploaded from the phone. Blocks until a photo arrives or timeout. Useful for the first photo after showing the QR code. For photos the user has already taken, use get_latest_photo instead.",
+    "Wait for a photo or a user action from the phone. Blocks until something happens: a photo is uploaded, the user switches to Live mode, or timeout. The phone is fully bidirectional — the user can drive the interaction by tapping Photo or Live on their phone. If the user switches to Live mode, you should call get_live_frame to start watching. If a photo arrives, it is returned as an image.",
     {
       timeout_seconds: z
         .number()
@@ -111,19 +111,44 @@ export async function runMcpServer(): Promise<void> {
           ? `http://${getServerConfig()!.host}:${getServerConfig()!.port}/?token=${getServerConfig()!.token}`
           : null;
 
-      const meta = await waitForPhoto(timeoutMs);
+      const result = await waitForPhoto(timeoutMs);
 
-      if (!meta) {
+      if (!result) {
         return {
           content: [
             {
               type: "text" as const,
-              text: `No photo received within ${Math.round(timeoutMs / 1000)} seconds.${url ? ` The camera server is still running at: ${url}` : ""}\n\nCall capture_photo again to show the QR code, then wait_for_photo to receive it.`,
+              text: `No activity within ${Math.round(timeoutMs / 1000)} seconds.${url ? ` The camera server is still running at: ${url}` : ""}\n\nCall capture_photo again to show the QR code, then wait_for_photo to receive it.`,
             },
           ],
         };
       }
 
+      // Check if this is a user action (has 'action' property) rather than a photo
+      if ("action" in result) {
+        const action = result.action;
+        if (action === "start_livestream") {
+          return {
+            content: [
+              {
+                type: "text" as const,
+                text: "The user switched to Live mode on their phone. The camera is now streaming frames every 3 seconds. Call get_live_frame to see what the camera sees, and send_to_phone to show guidance on the phone screen.",
+              },
+            ],
+          };
+        }
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: `User action from phone: ${action}`,
+            },
+          ],
+        };
+      }
+
+      // It's a photo
+      const meta = result;
       const imageData = fs.readFileSync(meta.absolutePath);
       const base64 = imageData.toString("base64");
 
