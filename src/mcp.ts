@@ -324,16 +324,13 @@ export async function runMcpServer(): Promise<void> {
     async () => {
       const httpsUrl = await ensureHttpsServer();
 
+      // Always send the SSE event to notify connected phones
       if (hasConnectedClients()) {
         switchToLiveMode();
-        return {
-          content: [{
-            type: "text" as const,
-            text: "Phone has been switched to Live mode. The camera viewfinder is now active and streaming frames every 3 seconds. Call get_live_frame to see what the camera sees.",
-          }],
-        };
       }
 
+      // Always show the HTTPS QR code — the phone needs HTTPS for getUserMedia
+      // even if already connected via HTTP
       const qrText = generateQRText(httpsUrl);
       return {
         content: [{
