@@ -296,9 +296,15 @@ export async function runMcpServer(): Promise<void> {
 
   server.tool(
     "get_live_frame",
-    "Get the latest frame from the phone's live camera stream. Returns the most recent frame as an image with a timestamp showing how fresh it is. Call this repeatedly to monitor what the camera sees in semi-real-time. Use send_to_phone to display guidance on the phone screen.",
-    {},
-    async () => {
+    "Get the latest frame from the phone's live camera stream. Returns the most recent frame as an image with a timestamp showing how fresh it is. Use wait_seconds to delay before grabbing the frame — this gives the user time to adjust the camera after receiving guidance via send_to_phone. Combine send_to_phone + get_live_frame(wait_seconds) in a loop to guide the user hands-free.",
+    {
+      wait_seconds: z.number().optional().describe("Wait this many seconds before returning the frame. Use after sending guidance to give the user time to adjust the camera (e.g., 5-10 seconds)."),
+    },
+    async ({ wait_seconds }) => {
+      if (wait_seconds && wait_seconds > 0) {
+        await new Promise((resolve) => setTimeout(resolve, wait_seconds * 1000));
+      }
+
       const frame = getLatestFrame();
 
       if (!frame) {

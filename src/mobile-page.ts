@@ -477,7 +477,7 @@ ${options?.liveMode ? `
         return div.innerHTML;
       }
       // SSE: listen for photo requests from Claude
-      var evtUrl = ${JSON.stringify(uploadUrl.replace('/upload', '/events'))};
+      var evtUrl = ${JSON.stringify(uploadUrl.replace(/\/[^/]*$/, '/events'))};
       var evtSeparator = evtUrl.indexOf('?') === -1 ? '?' : '&';
       var evtSource = new EventSource(evtUrl + evtSeparator + 'token=' + encodeURIComponent(token));
 
