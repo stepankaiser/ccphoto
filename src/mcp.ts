@@ -239,9 +239,9 @@ export async function runMcpServer(): Promise<void> {
         };
       }
 
-      if (!isServerRunning() || !hasConnectedClients()) {
+      if (!(isServerRunning() || isHttpsServerRunning()) || !hasConnectedClients()) {
         return {
-          content: [{ type: "text" as const, text: "No phone connected. Use capture_photo first to connect a phone." }],
+          content: [{ type: "text" as const, text: "No phone connected. Use capture_photo or start_livestream first to connect a phone." }],
         };
       }
 
@@ -298,7 +298,7 @@ export async function runMcpServer(): Promise<void> {
     "get_live_frame",
     "Get the latest frame from the phone's live camera stream. Returns the most recent frame as an image with a timestamp showing how fresh it is. Use wait_seconds to delay before grabbing the frame — this gives the user time to adjust the camera after receiving guidance via send_to_phone. Combine send_to_phone + get_live_frame(wait_seconds) in a loop to guide the user hands-free.",
     {
-      wait_seconds: z.number().optional().describe("Wait this many seconds before returning the frame. Use after sending guidance to give the user time to adjust the camera (e.g., 5-10 seconds)."),
+      wait_seconds: z.coerce.number().optional().describe("Wait this many seconds before returning the frame. Use after sending guidance to give the user time to adjust the camera (e.g., 5-10 seconds)."),
     },
     async ({ wait_seconds }) => {
       if (wait_seconds && wait_seconds > 0) {
