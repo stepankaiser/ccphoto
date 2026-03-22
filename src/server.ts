@@ -108,8 +108,23 @@ function handleModeSwitch(
   }
 
   const chunks: Buffer[] = [];
-  req.on("data", (chunk: Buffer) => chunks.push(chunk));
+  let totalSize = 0;
+  const MAX_BODY_SIZE = 64 * 1024; // 64KB
+
+  req.on("data", (chunk: Buffer) => {
+    totalSize += chunk.length;
+    if (totalSize <= MAX_BODY_SIZE) {
+      chunks.push(chunk);
+    }
+  });
+
   req.on("end", () => {
+    if (totalSize > MAX_BODY_SIZE) {
+      res.writeHead(413, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Body too large" }));
+      return;
+    }
+
     try {
       const body = JSON.parse(Buffer.concat(chunks).toString());
       const action: UserAction = { action: body.action ?? "unknown", data: body };
@@ -229,6 +244,13 @@ function handleEvents(
   if (!checkToken(url, cfg.token)) {
     res.writeHead(403, { "Content-Type": "text/plain" });
     res.end("Forbidden");
+    return;
+  }
+
+  const MAX_SSE_CLIENTS = 10;
+  if (sseClients.size >= MAX_SSE_CLIENTS) {
+    res.writeHead(503, { "Content-Type": "text/plain" });
+    res.end("Too many connections");
     return;
   }
 

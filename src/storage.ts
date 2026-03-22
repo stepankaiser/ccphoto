@@ -45,7 +45,10 @@ export function savePhoto(
   originalName: string,
   data: Buffer,
 ): PhotoMeta {
-  const ext = path.extname(originalName).toLowerCase() || ".jpg";
+  let ext = path.extname(originalName).toLowerCase();
+  if (!ext || !IMAGE_EXTENSIONS.has(ext)) {
+    ext = ".jpg";
+  }
   const timestamp = new Date();
   const base = `photo-${formatTimestamp(timestamp)}`;
 
@@ -107,17 +110,19 @@ export function getLatestPhoto(dir: string): PhotoMeta | null {
 }
 
 export function getPhotoByFilename(dir: string, filename: string): PhotoMeta | null {
-  const absolutePath = path.join(dir, filename);
+  // Prevent path traversal
+  const safeName = path.basename(filename);
+  const absolutePath = path.join(dir, safeName);
   if (!fs.existsSync(absolutePath)) return null;
 
-  const ext = path.extname(filename).toLowerCase();
+  const ext = path.extname(safeName).toLowerCase();
   if (!IMAGE_EXTENSIONS.has(ext)) return null;
 
   const stat = fs.statSync(absolutePath);
   if (!stat.isFile()) return null;
 
   return {
-    filename,
+    filename: safeName,
     absolutePath,
     timestamp: stat.mtime,
     sizeBytes: stat.size,

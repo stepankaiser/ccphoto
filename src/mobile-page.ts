@@ -1442,6 +1442,7 @@ export function renderMobilePage(token: string): string {
       var voiceStatusEl = document.getElementById('voice-status');
       var voiceRecognition = null;
       var voiceActive = false;
+      var voiceNoticeShown = false;
 
       if (SpeechRecognition) {
         voiceBtn.classList.remove('hidden');
@@ -1461,7 +1462,15 @@ export function renderMobilePage(token: string): string {
 
           voiceActive = true;
           voiceBtn.classList.add('listening');
-          showVoiceStatus('Listening...');
+          if (!voiceNoticeShown) {
+            showVoiceStatus('Voice uses cloud speech recognition');
+            voiceNoticeShown = true;
+            setTimeout(function() {
+              showVoiceStatus('Listening...');
+            }, 1500);
+          } else {
+            showVoiceStatus('Listening...');
+          }
 
           try {
             voiceRecognition.start();

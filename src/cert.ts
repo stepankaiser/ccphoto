@@ -61,7 +61,7 @@ export async function generateCerts(host: string): Promise<CertPems> {
     ],
   });
   const { keyPath, certPath } = certPaths();
-  fs.writeFileSync(keyPath, pems.private);
+  fs.writeFileSync(keyPath, pems.private, { mode: 0o600 });
   fs.writeFileSync(certPath, pems.cert);
   return { key: pems.private, cert: pems.cert };
 }
