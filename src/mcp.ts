@@ -275,7 +275,7 @@ export async function runMcpServer(): Promise<void> {
       text: z.string().optional().describe("Text content to display. Supports basic markdown: **bold**, `code`, # headers, - lists, ```code blocks```."),
       image_base64: z.string().optional().describe("Base64-encoded image data to display on the phone."),
       image_mime_type: z.string().optional().describe("MIME type of the image (e.g. 'image/png'). Required when image_base64 is provided."),
-      speak: z.boolean().optional().describe("If true, the phone will speak the text aloud using text-to-speech."),
+      speak: z.preprocess((v) => v === "true" || v === true, z.boolean()).optional().describe("If true, the phone will speak the text aloud using text-to-speech."),
     },
     async ({ text, image_base64, image_mime_type, speak }) => {
       if (!text && !image_base64) {
