@@ -1152,9 +1152,16 @@ export function renderMobilePage(token: string): string {
       var FRAME_INTERVAL_MS = 3000;
 
       function startLiveStream() {
-        liveStatus.textContent = 'Starting camera...';
         liveStatus.style.color = '#888';
         streamingIndicator.style.display = 'none';
+
+        if (!window.isSecureContext || !navigator.mediaDevices) {
+          liveStatus.textContent = 'Live mode requires HTTPS. Say "start livestream" in Claude Code.';
+          liveStatus.style.color = '#f59e0b';
+          return;
+        }
+
+        liveStatus.textContent = 'Starting camera...';
 
         navigator.mediaDevices.getUserMedia({
           video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
@@ -1444,7 +1451,7 @@ export function renderMobilePage(token: string): string {
       var voiceActive = false;
       var voiceNoticeShown = false;
 
-      if (SpeechRecognition) {
+      if (SpeechRecognition && window.isSecureContext) {
         voiceBtn.classList.remove('hidden');
 
         voiceRecognition = new SpeechRecognition();
