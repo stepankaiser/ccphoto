@@ -1,0 +1,21 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.stepankaiser/ccphoto",
+  "title": "CCPhoto — Phone Camera Bridge",
+  "description": "Phone camera bridge for Claude Code — photos, live video, voice, and generative UI",
+  "repository": {
+    "url": "https://github.com/stepankaiser/ccphoto",
+    "source": "github"
+  },
+  "version": "0.3.1",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "ccphoto",
+      "version": "0.3.1",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}
