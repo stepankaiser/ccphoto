@@ -94,10 +94,8 @@ tool calls.
 **Setup:**
 
 ```bash
-# Install from beta branch
-git clone https://github.com/stepankaiser/ccphoto.git -b beta
-cd ccphoto && npm install && npm run build
-claude mcp add ccphoto -- node /path/to/ccphoto/dist/index.js --mcp
+# Install beta version
+npx ccphoto@beta --setup
 
 # Start Claude Code with channels enabled
 claude --dangerously-load-development-channels server:ccphoto
@@ -140,7 +138,7 @@ period.
 | MCP Channels (push events) | -- | Yes |
 
 Install stable: `npx ccphoto --setup`
-Install beta: clone the repo, checkout `beta` branch, build from source.
+Install beta: `npx ccphoto@beta --setup`
 
 ## Installation
 
@@ -288,7 +286,6 @@ src/
   camera view in real-time.
 - **Multi-camera support** -- Connect multiple phones simultaneously for
   different viewing angles.
-- **npm publish to registry** -- Make CCPhoto installable via `npx ccphoto`.
 - **WebRTC streaming** -- Replace HTTP frame polling with WebRTC when Claude's
   vision processing latency improves.
 
