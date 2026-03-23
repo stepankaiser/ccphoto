@@ -6,7 +6,7 @@ Phone camera bridge for Claude Code — MCP server + standalone CLI.
 
 ```bash
 npm run build        # Compile TypeScript
-npm test             # Run tests (87 tests, requires tsx)
+npm test             # Run tests (89 tests, requires tsx)
 node dist/index.js   # Run standalone server
 node dist/index.js --mcp   # Run as MCP server
 ```
@@ -32,7 +32,7 @@ Co-located with source: `src/*.test.ts`. Run with `npm test`.
 - `storage.test.ts` — File save, list, collision handling, filtering
 - `network.test.ts` — IPv4 detection contract
 - `mobile-page.test.ts` — HTML rendering, element presence, token embedding
-- `server.test.ts` — HTTP endpoints, auth, uploads, waitForPhoto, CORS, performance
+- `server.test.ts` — HTTP endpoints, auth, uploads, waitForPhoto, CORS, performance, channel notifier callback
 - `cert.test.ts` — Certificate generation, validation, SAN matching
 
 ## Key Patterns
@@ -52,3 +52,7 @@ Co-located with source: `src/*.test.ts`. Run with `npm test`.
 - Voice input via Web Speech API (SpeechRecognition) on phone, sent as UserAction to server
 - TTS via SpeechSynthesis when `send_to_phone` includes `speak: true`
 - Two-tier server: HTTP for photos (no cert warning), HTTPS for live/voice (getUserMedia needs secure context)
+- `setChannelNotifier()` in server.ts bridges HTTP events to MCP channel push notifications
+- Channel notifications sent for photos (event="photo"), voice (event="voice"), and mode switches
+- MCP server declares `experimental: { 'claude/channel': {} }` capability for channel support
+- Channels are opt-in: without `--channels` flag, existing tools work as before (backward compatible)

@@ -84,6 +84,64 @@ This enables hands-free workflows: ask a question while holding a soldering
 iron, and hear the answer without looking at a screen. The mic button
 appears only on browsers that support Speech Recognition (Android Chrome).
 
+### MCP Channels (Beta)
+
+When running on the beta branch with channels enabled, CCPhoto pushes events
+directly into your Claude Code session. Photos, voice messages, and mode
+switches arrive as `<channel>` notifications without any polling or blocking
+tool calls.
+
+**Setup:**
+
+```bash
+# Install from beta branch
+git clone https://github.com/stepankaiser/ccphoto.git -b beta
+cd ccphoto && npm install && npm run build
+claude mcp add ccphoto -- node /path/to/ccphoto/dist/index.js --mcp
+
+# Start Claude Code with channels enabled
+claude --dangerously-load-development-channels server:ccphoto
+```
+
+**What you see in Claude Code:**
+
+When a photo is uploaded:
+```xml
+<channel source="ccphoto" event="photo" file_name="photo-2026-03-23.jpg" size_kb="1500">
+Photo captured: photo-2026-03-23.jpg (1500 KB)
+</channel>
+```
+
+When the user speaks into the mic:
+```xml
+<channel source="ccphoto" event="voice" speaker="user">
+What is this component?
+</channel>
+```
+
+Claude can then call `get_latest_photo` or `get_live_frame` to see the image,
+and `send_to_phone` with `speak: true` to respond with voice.
+
+**Note:** Channels are an MCP research preview feature. The
+`--dangerously-load-development-channels` flag is required during the preview
+period.
+
+### Stable vs Beta
+
+| Feature | Stable (main, v0.2.0) | Beta (beta, v0.3.0-beta) |
+|---------|:---:|:---:|
+| Photo capture + auto-upload | Yes | Yes |
+| Photo annotations | Yes | Yes |
+| Bidirectional messaging | Yes | Yes |
+| Toast notifications | Yes | Yes |
+| Live video streaming | Yes | Yes |
+| Voice (mic + TTS) | Yes | Yes |
+| Phone-driven actions | Yes | Yes |
+| MCP Channels (push events) | -- | Yes |
+
+Install stable: `npx ccphoto --setup`
+Install beta: clone the repo, checkout `beta` branch, build from source.
+
 ## Installation
 
 ### npx (recommended, no install)
@@ -197,7 +255,7 @@ personal hotspot or home network instead.
 npm install          # Install dependencies
 npm run build        # Compile TypeScript
 npm run dev          # Watch mode (recompile on change)
-npm test             # Run the test suite (87 tests)
+npm test             # Run the test suite (89 tests)
 ```
 
 Tests use the Node.js built-in test runner and require the `tsx` dev dependency
@@ -219,6 +277,9 @@ src/
 
 ## Roadmap
 
+- **MCP Channels** -- Available on beta branch. Push photo/voice events directly
+  into Claude Code sessions. Will move to stable when the MCP channels API
+  graduates from research preview.
 - **Real domain + Let's Encrypt certs** -- Use a registered domain with valid
   certificates for zero browser warnings on any device, including iOS Safari.
 - **iOS live video support** -- Live video streaming currently works on
