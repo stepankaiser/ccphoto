@@ -1851,8 +1851,11 @@ export function renderMobilePage(token: string): string {
       var renderPanel = document.getElementById('render-panel');
       var renderContent = document.getElementById('render-content');
       var renderCloseBtn = document.getElementById('render-close');
+      var activeTimers = [];
 
       renderCloseBtn.addEventListener('click', function() {
+        activeTimers.forEach(function(id) { clearInterval(id); });
+        activeTimers = [];
         renderPanel.style.display = 'none';
       });
 
@@ -1887,7 +1890,9 @@ export function renderMobilePage(token: string): string {
           var frag = document.createDocumentFragment();
           var img = document.createElement('img');
           img.className = 'jr-image';
-          img.src = props.src || '';
+          var src = props.src || '';
+          if (src && !/^(https?:|data:image\/)/.test(src)) src = '';
+          img.src = src;
           img.alt = props.alt || '';
           frag.appendChild(img);
           if (props.caption) {
@@ -2050,6 +2055,7 @@ export function renderMobilePage(token: string): string {
                   emitUIAction('timer_complete', { label: props.label });
                 }
               }, 1000);
+              activeTimers.push(interval);
             }
           });
           div.appendChild(btn);
@@ -2073,6 +2079,8 @@ export function renderMobilePage(token: string): string {
       };
 
       function renderUISpec(spec) {
+        activeTimers.forEach(function(id) { clearInterval(id); });
+        activeTimers = [];
         renderContent.innerHTML = '';
         if (!spec || !spec.root || !spec.elements) return;
         var rootEl = renderElement(spec, spec.root);
@@ -2080,13 +2088,15 @@ export function renderMobilePage(token: string): string {
         renderPanel.style.display = '';
       }
 
-      function renderElement(spec, id) {
+      function renderElement(spec, id, depth) {
+        if (!depth) depth = 0;
+        if (depth > 20) return null;
         var el = spec.elements[id];
         if (!el) return null;
         var renderer = COMPONENT_RENDERERS[el.type];
         if (!renderer) return null;
         var children = (el.children || []).map(function(cid) {
-          return renderElement(spec, cid);
+          return renderElement(spec, cid, depth + 1);
         }).filter(Boolean);
         return renderer(el.props || {}, children);
       }
