@@ -84,6 +84,19 @@ This enables hands-free workflows: ask a question while holding a soldering
 iron, and hear the answer without looking at a screen. The mic button
 appears only on browsers that support Speech Recognition (Android Chrome).
 
+### Generative UI
+
+Claude can generate rich, contextual UI on your phone based on what it sees.
+Point your camera at a product, component, recipe, or anything -- Claude
+analyzes it and sends a custom interactive interface to your phone display.
+
+12 component types: Card, Text, Image, Metric, MetricGrid, Checklist,
+StepByStep, Alert, Table, Timer, Badge, and Divider. Claude composes these
+into contextual layouts -- a plant care card with watering checklist, a circuit
+component table with pin diagrams, or a step-by-step repair guide with timers.
+
+Use `send_to_phone` with the `ui_spec` parameter to generate custom UI.
+
 ### MCP Channels (Beta)
 
 When running on the beta branch with channels enabled, CCPhoto pushes events
@@ -135,6 +148,7 @@ period.
 | Live video streaming | Yes | Yes |
 | Voice (mic + TTS) | Yes | Yes |
 | Phone-driven actions | Yes | Yes |
+| Generative UI (12 components) | Yes | Yes |
 | MCP Channels (push events) | -- | Yes |
 
 Install stable: `npx ccphoto --setup`
@@ -179,7 +193,7 @@ claude mcp add ccphoto -- npx ccphoto --mcp
 | `wait_for_photo` | Block until a photo is uploaded or the timeout expires. Call this immediately after `capture_photo`. | `timeout_seconds` (optional, default: 120) |
 | `get_latest_photo` | Return the most recent photo, or a specific photo by filename. | `filename` (optional) |
 | `list_photos` | List all captured photos with filenames, timestamps, and sizes. | -- |
-| `send_to_phone` | Send text (markdown) or images to the phone display. The phone becomes a reference screen for instructions, diagrams, or pinouts. | `text` (optional), `image_base64` (optional), `image_mime_type` (optional), `speak` (optional, boolean) |
+| `send_to_phone` | Send text, images, or rich generative UI to the phone display. The phone becomes a reference screen for instructions, diagrams, or pinouts. | `text`, `image_base64`, `image_mime_type`, `speak`, `ui_spec` (all optional) |
 | `start_livestream` | Start a live video stream from the phone camera. Generates HTTPS certificate and returns QR code. | -- |
 | `get_live_frame` | Get the latest frame from the live camera stream with freshness timestamp. | -- |
 
