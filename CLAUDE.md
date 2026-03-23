@@ -6,7 +6,7 @@ Phone camera bridge for Claude Code — MCP server + standalone CLI.
 
 ```bash
 npm run build        # Compile TypeScript
-npm test             # Run tests (89 tests, requires tsx)
+npm test             # Run tests (96 tests, requires tsx)
 node dist/index.js   # Run standalone server
 node dist/index.js --mcp   # Run as MCP server
 ```
@@ -56,3 +56,23 @@ Co-located with source: `src/*.test.ts`. Run with `npm test`.
 - Channel notifications sent for photos (event="photo"), voice (event="voice"), and mode switches
 - MCP server declares `experimental: { 'claude/channel': {} }` capability for channel support
 - Channels are opt-in: without `--channels` flag, existing tools work as before (backward compatible)
+- Generative UI: `send_to_phone` with `ui_spec` renders JSON-to-DOM components on phone (12 types)
+
+## Branch Strategy & Release Process
+
+Two branches MUST stay separated:
+- `main` — stable, published as npm `@latest`. NO channels code.
+- `beta` — experimental, published as npm `@beta`. HAS MCP Channels.
+
+**Never merge beta into main** — cherry-pick stable features instead.
+
+### Publishing checklist:
+1. Bump version in `package.json` AND `src/mcp.ts`
+2. `npm run build && npm test`
+3. `npm publish` (main) or `npm publish --tag beta` (beta)
+4. Update `server.json` version, run `mcp-publisher publish` (stable only)
+5. Verify: `npm view ccphoto dist-tags --json`
+
+### Registry:
+- npm: `ccphoto` (@latest + @beta)
+- MCP Registry: `io.github.stepankaiser/ccphoto` (stable only)
