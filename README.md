@@ -227,7 +227,6 @@ src/
   camera view in real-time.
 - **Multi-camera support** -- Connect multiple phones simultaneously for
   different viewing angles.
-- **npm publish to registry** -- Make CCPhoto installable via `npx ccphoto`.
 - **WebRTC streaming** -- Replace HTTP frame polling with WebRTC when Claude's
   vision processing latency improves.
 
