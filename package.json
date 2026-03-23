@@ -1,6 +1,6 @@
 {
   "name": "ccphoto",
-  "version": "0.3.0-beta.1",
+  "version": "0.3.1-beta.0",
   "description": "Bridge your phone camera to Claude Code over the local network",
   "license": "MIT",
   "type": "module",
@@ -35,13 +35,17 @@
   "keywords": [
     "claude-code",
     "mcp",
+    "mcp-server",
     "camera",
     "phone",
     "photo",
     "hardware",
     "raspberry-pi",
-    "arduino"
+    "arduino",
+    "generative-ui",
+    "mcp-channels"
   ],
+  "mcpName": "io.github.stepankaiser/ccphoto",
   "repository": {
     "type": "git",
     "url": "https://github.com/stepankaiser/ccphoto"
