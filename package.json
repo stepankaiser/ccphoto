@@ -35,13 +35,16 @@
   "keywords": [
     "claude-code",
     "mcp",
+    "mcp-server",
     "camera",
     "phone",
     "photo",
     "hardware",
     "raspberry-pi",
-    "arduino"
+    "arduino",
+    "generative-ui"
   ],
+  "mcpName": "io.github.stepankaiser/ccphoto",
   "repository": {
     "type": "git",
     "url": "https://github.com/stepankaiser/ccphoto"
