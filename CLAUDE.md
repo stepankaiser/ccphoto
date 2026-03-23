@@ -6,7 +6,7 @@ Phone camera bridge for Claude Code — MCP server + standalone CLI.
 
 ```bash
 npm run build        # Compile TypeScript
-npm test             # Run tests (87 tests, requires tsx)
+npm test             # Run tests (94 tests, requires tsx)
 node dist/index.js   # Run standalone server
 node dist/index.js --mcp   # Run as MCP server
 ```
@@ -52,3 +52,4 @@ Co-located with source: `src/*.test.ts`. Run with `npm test`.
 - Voice input via Web Speech API (SpeechRecognition) on phone, sent as UserAction to server
 - TTS via SpeechSynthesis when `send_to_phone` includes `speak: true`
 - Two-tier server: HTTP for photos (no cert warning), HTTPS for live/voice (getUserMedia needs secure context)
+- Generative UI: `send_to_phone` with `ui_spec` renders JSON-to-DOM components on phone (12 types)
