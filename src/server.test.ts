@@ -15,6 +15,7 @@ import {
   hasConnectedClients,
   sendToPhone,
   getLatestFrame,
+  setChannelNotifier,
   _resetState,
 } from "./server.js";
 import { generateToken } from "./token.js";
@@ -386,5 +387,62 @@ describe("frame endpoint", () => {
     const result = await waitPromise;
     assert.ok(result);
     assert.ok("action" in result!);
+  });
+});
+
+describe("channel notifier", () => {
+  afterEach(() => {
+    stopServer();
+    _resetState();
+  });
+
+  it("channelNotifier fires on photo upload", async () => {
+    await boot();
+    const notifications: Array<{ content: string; meta: Record<string, string> }> = [];
+
+    setChannelNotifier((content, meta) => {
+      notifications.push({ content, meta });
+    });
+
+    const { body: multipartBody, contentType } = createMultipartBody(
+      "photo",
+      "channel-test.jpg",
+      Buffer.from("channel-test"),
+      "image/jpeg",
+    );
+
+    await request({
+      port,
+      path: `/upload?token=${token}`,
+      method: "POST",
+      headers: { "Content-Type": contentType },
+      body: multipartBody,
+    });
+
+    assert.equal(notifications.length, 1);
+    assert.ok(notifications[0].content.includes("Photo captured:"));
+    assert.equal(notifications[0].meta.event, "photo");
+    assert.ok(notifications[0].meta.file_name.startsWith("photo-"));
+  });
+
+  it("channelNotifier fires on voice message", async () => {
+    await boot();
+    const notifications: Array<{ content: string; meta: Record<string, string> }> = [];
+
+    setChannelNotifier((content, meta) => {
+      notifications.push({ content, meta });
+    });
+
+    await request({
+      port,
+      path: `/mode-switch?token=${token}`,
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: Buffer.from(JSON.stringify({ action: "voice_message", text: "hello Claude" })),
+    });
+
+    assert.equal(notifications.length, 1);
+    assert.ok(notifications[0].content.includes("hello Claude"));
+    assert.equal(notifications[0].meta.event, "voice");
   });
 });

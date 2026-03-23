@@ -5,7 +5,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import qrcode from "qrcode-terminal";
-import { startServer, isServerRunning, getServerConfig, waitForPhoto, requestPhoto, hasConnectedClients, sendToPhone, startHttpsServer, isHttpsServerRunning, getLatestFrame, switchToLiveMode } from "./server.js";
+import { startServer, isServerRunning, getServerConfig, waitForPhoto, requestPhoto, hasConnectedClients, sendToPhone, startHttpsServer, isHttpsServerRunning, getLatestFrame, switchToLiveMode, setChannelNotifier } from "./server.js";
 import { getLocalIPv4 } from "./network.js";
 import { generateToken } from "./token.js";
 import { ensureCerts } from "./cert.js";
@@ -68,10 +68,18 @@ async function ensureHttpsServer(): Promise<string> {
 }
 
 export async function runMcpServer(): Promise<void> {
-  const server = new McpServer({
-    name: "ccphoto",
-    version: "0.1.0",
-  });
+  const server = new McpServer(
+    {
+      name: "ccphoto",
+      version: "0.3.0-beta.0",
+    },
+    {
+      capabilities: {
+        experimental: { "claude/channel": {} },
+      },
+      instructions: `CCPhoto is a phone camera bridge. Events from the phone arrive as <channel source="ccphoto"> tags when channels are enabled. Photo uploads include file_name and size metadata — call get_latest_photo to see the image. Voice messages include the transcribed text. Use send_to_phone to reply (with speak:true for TTS).`,
+    },
+  );
 
   server.tool(
     "capture_photo",
@@ -386,4 +394,13 @@ export async function runMcpServer(): Promise<void> {
 
   const transport = new StdioServerTransport();
   await server.connect(transport);
+
+  // Wire up channel notifications — pushes photo/voice events to Claude
+  // when running with --channels flag (beta feature)
+  setChannelNotifier((content, meta) => {
+    server.server.notification({
+      method: "notifications/claude/channel",
+      params: { content, meta },
+    });
+  });
 }

@@ -18,6 +18,14 @@ let pendingPhoto: PhotoMeta | null = null;
 let latestFrame: FrameData | null = null;
 const sseClients = new Set<http.ServerResponse>();
 
+// Channel notification callback — bridges HTTP events to MCP channel pushes
+type ChannelNotifier = (content: string, meta: Record<string, string>) => void;
+let channelNotifier: ChannelNotifier | null = null;
+
+export function setChannelNotifier(notifier: ChannelNotifier): void {
+  channelNotifier = notifier;
+}
+
 // User action system — phone can trigger actions that resolve waitForPhoto
 export interface UserAction {
   action: string;
@@ -71,6 +79,19 @@ export function waitForPhoto(timeoutMs: number): Promise<PhotoMeta | null | User
 }
 
 function notifyPhotoListeners(meta: PhotoMeta): void {
+  // Push channel notification (if channels enabled)
+  if (channelNotifier) {
+    channelNotifier(
+      `Photo captured: ${meta.filename} (${Math.round(meta.sizeBytes / 1024)} KB)`,
+      {
+        event: "photo",
+        file_name: meta.filename,
+        file_path: meta.absolutePath,
+        size_kb: String(Math.round(meta.sizeBytes / 1024)),
+      },
+    );
+  }
+
   if (photoListeners.length === 0) {
     pendingPhoto = meta;
     return;
@@ -83,6 +104,14 @@ function notifyPhotoListeners(meta: PhotoMeta): void {
 }
 
 function notifyActionListeners(action: UserAction): void {
+  // Push channel notification for voice messages
+  if (channelNotifier && action.action === "voice_message") {
+    channelNotifier(
+      (action.data?.text as string) || "(voice)",
+      { event: "voice", speaker: "user" },
+    );
+  }
+
   if (actionListeners.length === 0) {
     pendingAction = action;
     return;
@@ -480,6 +509,7 @@ export function _resetState(): void {
   latestFrame = null;
   photoListeners.length = 0;
   actionListeners.length = 0;
+  channelNotifier = null;
   for (const client of sseClients) {
     client.end();
   }
