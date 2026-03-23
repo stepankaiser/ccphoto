@@ -183,4 +183,43 @@ describe("renderMobilePage", () => {
     assert.ok(html.includes("<svg"));
     assert.ok(html.includes("M12 1a3 3"));
   });
+
+  // ---- JSON Render UI -------------------------------------------------------
+
+  it("contains render panel", () => {
+    assert.ok(html.includes('id="render-panel"'));
+    assert.ok(html.includes('id="render-content"'));
+    assert.ok(html.includes('id="render-close"'));
+  });
+
+  it("contains COMPONENT_RENDERERS with all 12 types", () => {
+    assert.ok(html.includes("COMPONENT_RENDERERS"));
+    const types = ["Card", "Text", "Image", "Metric", "MetricGrid", "Checklist", "StepByStep", "Alert", "Table", "Timer", "Badge", "Divider"];
+    for (const t of types) {
+      assert.ok(html.includes(t + ":"), `Missing component: ${t}`);
+    }
+  });
+
+  it("contains renderUISpec function", () => {
+    assert.ok(html.includes("renderUISpec"));
+  });
+
+  it("contains emitUIAction function", () => {
+    assert.ok(html.includes("emitUIAction"));
+  });
+
+  it("routes uiSpec to renderer in content-push handler", () => {
+    assert.ok(html.includes("data.uiSpec"));
+    assert.ok(html.includes("renderUISpec(data.uiSpec)"));
+  });
+
+  it("contains timer with start/pause/done states", () => {
+    assert.ok(html.includes("jr-timer"));
+    assert.ok(html.includes("timer_complete"));
+  });
+
+  it("contains checklist with toggle interaction", () => {
+    assert.ok(html.includes("jr-checklist"));
+    assert.ok(html.includes("checklist_toggle"));
+  });
 });

@@ -665,6 +665,298 @@ export function renderMobilePage(token: string): string {
       text-align: center;
       pointer-events: none;
     }
+
+    /* JSON Render Panel */
+    .render-panel {
+      position: fixed;
+      inset: 0;
+      z-index: 210;
+      background: #111;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 16px;
+      padding-top: 56px;
+    }
+
+    .render-close {
+      position: fixed;
+      top: 12px;
+      right: 12px;
+      z-index: 211;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: none;
+      background: #333;
+      color: #fff;
+      font-size: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Components */
+    .jr-card {
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 12px;
+    }
+
+    .jr-card-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 4px;
+    }
+
+    .jr-card-subtitle {
+      font-size: 14px;
+      color: #888;
+      margin-bottom: 16px;
+    }
+
+    .jr-text {
+      font-size: 15px;
+      line-height: 1.6;
+      color: #ddd;
+      margin-bottom: 12px;
+    }
+
+    .jr-text strong { color: #fff; }
+    .jr-text code { background: #000; padding: 1px 5px; border-radius: 4px; font-size: 13px; }
+    .jr-text pre { background: #000; padding: 10px; border-radius: 8px; overflow-x: auto; margin: 8px 0; }
+
+    .jr-image {
+      width: 100%;
+      border-radius: 12px;
+      margin-bottom: 12px;
+    }
+
+    .jr-image-caption {
+      font-size: 12px;
+      color: #888;
+      text-align: center;
+      margin-top: -8px;
+      margin-bottom: 12px;
+    }
+
+    .jr-metric {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+      padding: 12px;
+      background: #222;
+      border-radius: 10px;
+    }
+
+    .jr-metric-label {
+      font-size: 11px;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .jr-metric-value {
+      font-size: 22px;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .jr-metric-unit {
+      font-size: 14px;
+      color: #888;
+      font-weight: 400;
+    }
+
+    .jr-metric-grid {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .jr-checklist {
+      list-style: none;
+      padding: 0;
+      margin: 0 0 12px 0;
+    }
+
+    .jr-checklist-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 0;
+      border-bottom: 1px solid #222;
+      font-size: 15px;
+      color: #ddd;
+      cursor: pointer;
+    }
+
+    .jr-checklist-item:last-child { border-bottom: none; }
+
+    .jr-check {
+      width: 22px;
+      height: 22px;
+      border-radius: 6px;
+      border: 2px solid #444;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all 0.15s;
+    }
+
+    .jr-check.checked {
+      background: #2563eb;
+      border-color: #2563eb;
+      color: #fff;
+    }
+
+    .jr-checklist-text.checked {
+      text-decoration: line-through;
+      color: #666;
+    }
+
+    .jr-steps {
+      margin-bottom: 12px;
+    }
+
+    .jr-step {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 10px 0;
+    }
+
+    .jr-step-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: #333;
+      color: #888;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .jr-step.active .jr-step-num {
+      background: #2563eb;
+      color: #fff;
+    }
+
+    .jr-step.completed .jr-step-num {
+      background: #22c55e;
+      color: #fff;
+    }
+
+    .jr-step-text {
+      font-size: 15px;
+      color: #888;
+      padding-top: 3px;
+    }
+
+    .jr-step.active .jr-step-text {
+      color: #fff;
+      font-weight: 600;
+    }
+
+    .jr-step.completed .jr-step-text {
+      color: #666;
+      text-decoration: line-through;
+    }
+
+    .jr-alert {
+      padding: 12px 16px;
+      border-radius: 10px;
+      font-size: 14px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .jr-alert.info { background: #172554; color: #93c5fd; border: 1px solid #1e3a5f; }
+    .jr-alert.warning { background: #422006; color: #fbbf24; border: 1px solid #5c3a0a; }
+    .jr-alert.success { background: #052e16; color: #86efac; border: 1px solid #0a4a25; }
+    .jr-alert.error { background: #450a0a; color: #fca5a5; border: 1px solid #6b1010; }
+
+    .jr-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 12px;
+      font-size: 14px;
+    }
+
+    .jr-table th {
+      text-align: left;
+      padding: 10px 12px;
+      background: #222;
+      color: #888;
+      font-weight: 600;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .jr-table td {
+      padding: 10px 12px;
+      color: #ddd;
+      border-bottom: 1px solid #222;
+    }
+
+    .jr-timer {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      padding: 20px;
+      background: #222;
+      border-radius: 12px;
+      margin-bottom: 12px;
+    }
+
+    .jr-timer-display {
+      font-size: 48px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      color: #fff;
+    }
+
+    .jr-timer-label {
+      font-size: 14px;
+      color: #888;
+    }
+
+    .jr-timer-btn {
+      padding: 8px 24px;
+      border-radius: 8px;
+      border: none;
+      background: #2563eb;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .jr-badge {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      margin: 0 4px 8px 0;
+    }
+
+    .jr-divider {
+      height: 1px;
+      background: #2a2a2a;
+      margin: 16px 0;
+    }
   </style>
 </head>
 <body>
@@ -699,6 +991,11 @@ export function renderMobilePage(token: string): string {
 
   <!-- Toast container -->
   <div class="toast-container" id="toast-container"></div>
+
+  <div id="render-panel" class="render-panel" style="display:none;">
+    <button class="render-close" id="render-close" type="button">&times;</button>
+    <div id="render-content"></div>
+  </div>
 
   <button class="voice-btn hidden" id="voice-btn" type="button" aria-label="Voice message">
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -1126,8 +1423,12 @@ export function renderMobilePage(token: string): string {
         // Store in history
         messageHistory.push(data);
 
-        // Show toast
-        showToast(data);
+        // Route UI specs to renderer, text/images to toast
+        if (data.uiSpec) {
+          renderUISpec(data.uiSpec);
+        } else {
+          showToast(data);
+        }
 
         // TTS: speak the message if requested
         if (data.speak && data.text && window.speechSynthesis) {
@@ -1545,6 +1846,257 @@ export function renderMobilePage(token: string): string {
 
       function hideVoiceStatus() {
         voiceStatusEl.style.display = 'none';
+      }
+      // --- JSON Render UI ---
+      var renderPanel = document.getElementById('render-panel');
+      var renderContent = document.getElementById('render-content');
+      var renderCloseBtn = document.getElementById('render-close');
+
+      renderCloseBtn.addEventListener('click', function() {
+        renderPanel.style.display = 'none';
+      });
+
+      var COMPONENT_RENDERERS = {
+        Card: function(props, children) {
+          var div = document.createElement('div');
+          div.className = 'jr-card';
+          if (props.title) {
+            var t = document.createElement('div');
+            t.className = 'jr-card-title';
+            t.textContent = props.title;
+            div.appendChild(t);
+          }
+          if (props.subtitle) {
+            var s = document.createElement('div');
+            s.className = 'jr-card-subtitle';
+            s.textContent = props.subtitle;
+            div.appendChild(s);
+          }
+          children.forEach(function(c) { div.appendChild(c); });
+          return div;
+        },
+
+        Text: function(props) {
+          var div = document.createElement('div');
+          div.className = 'jr-text';
+          div.innerHTML = renderBasicMarkdown(props.content || '');
+          return div;
+        },
+
+        Image: function(props) {
+          var frag = document.createDocumentFragment();
+          var img = document.createElement('img');
+          img.className = 'jr-image';
+          img.src = props.src || '';
+          img.alt = props.alt || '';
+          frag.appendChild(img);
+          if (props.caption) {
+            var cap = document.createElement('div');
+            cap.className = 'jr-image-caption';
+            cap.textContent = props.caption;
+            frag.appendChild(cap);
+          }
+          return frag;
+        },
+
+        Metric: function(props) {
+          var div = document.createElement('div');
+          div.className = 'jr-metric';
+          var label = document.createElement('div');
+          label.className = 'jr-metric-label';
+          label.textContent = props.label || '';
+          div.appendChild(label);
+          var val = document.createElement('div');
+          val.className = 'jr-metric-value';
+          val.textContent = String(props.value || '');
+          if (props.unit) {
+            var unit = document.createElement('span');
+            unit.className = 'jr-metric-unit';
+            unit.textContent = ' ' + props.unit;
+            val.appendChild(unit);
+          }
+          div.appendChild(val);
+          return div;
+        },
+
+        MetricGrid: function(props, children) {
+          var div = document.createElement('div');
+          div.className = 'jr-metric-grid';
+          div.style.gridTemplateColumns = 'repeat(' + (props.columns || 2) + ', 1fr)';
+          children.forEach(function(c) { div.appendChild(c); });
+          return div;
+        },
+
+        Checklist: function(props) {
+          var ul = document.createElement('ul');
+          ul.className = 'jr-checklist';
+          (props.items || []).forEach(function(item, i) {
+            var li = document.createElement('li');
+            li.className = 'jr-checklist-item';
+            var check = document.createElement('div');
+            check.className = 'jr-check' + (item.checked ? ' checked' : '');
+            check.textContent = item.checked ? '\u2713' : '';
+            var text = document.createElement('span');
+            text.className = 'jr-checklist-text' + (item.checked ? ' checked' : '');
+            text.textContent = typeof item === 'string' ? item : (item.text || '');
+            li.appendChild(check);
+            li.appendChild(text);
+            li.addEventListener('click', function() {
+              item.checked = !item.checked;
+              check.className = 'jr-check' + (item.checked ? ' checked' : '');
+              check.textContent = item.checked ? '\u2713' : '';
+              text.className = 'jr-checklist-text' + (item.checked ? ' checked' : '');
+              emitUIAction('checklist_toggle', { index: i, checked: item.checked });
+            });
+            ul.appendChild(li);
+          });
+          return ul;
+        },
+
+        StepByStep: function(props) {
+          var div = document.createElement('div');
+          div.className = 'jr-steps';
+          var current = props.currentStep || 0;
+          (props.steps || []).forEach(function(step, i) {
+            var row = document.createElement('div');
+            row.className = 'jr-step' + (i === current ? ' active' : '') + (i < current ? ' completed' : '');
+            var num = document.createElement('div');
+            num.className = 'jr-step-num';
+            num.textContent = i < current ? '\u2713' : String(i + 1);
+            var text = document.createElement('div');
+            text.className = 'jr-step-text';
+            text.textContent = step;
+            row.appendChild(num);
+            row.appendChild(text);
+            div.appendChild(row);
+          });
+          return div;
+        },
+
+        Alert: function(props) {
+          var div = document.createElement('div');
+          div.className = 'jr-alert ' + (props.variant || 'info');
+          var icons = { info: '\u2139', warning: '\u26A0', success: '\u2713', error: '\u2717' };
+          div.textContent = (icons[props.variant] || '') + '  ' + (props.message || '');
+          return div;
+        },
+
+        Table: function(props) {
+          var table = document.createElement('table');
+          table.className = 'jr-table';
+          if (props.headers) {
+            var thead = document.createElement('thead');
+            var tr = document.createElement('tr');
+            props.headers.forEach(function(h) {
+              var th = document.createElement('th');
+              th.textContent = h;
+              tr.appendChild(th);
+            });
+            thead.appendChild(tr);
+            table.appendChild(thead);
+          }
+          var tbody = document.createElement('tbody');
+          (props.rows || []).forEach(function(row) {
+            var tr = document.createElement('tr');
+            row.forEach(function(cell) {
+              var td = document.createElement('td');
+              td.textContent = String(cell);
+              tr.appendChild(td);
+            });
+            tbody.appendChild(tr);
+          });
+          table.appendChild(tbody);
+          return table;
+        },
+
+        Timer: function(props) {
+          var div = document.createElement('div');
+          div.className = 'jr-timer';
+          var remaining = props.seconds || 0;
+          var display = document.createElement('div');
+          display.className = 'jr-timer-display';
+          function fmt(s) {
+            var m = Math.floor(s / 60);
+            var sec = s % 60;
+            return (m < 10 ? '0' : '') + m + ':' + (sec < 10 ? '0' : '') + sec;
+          }
+          display.textContent = fmt(remaining);
+          div.appendChild(display);
+          if (props.label) {
+            var label = document.createElement('div');
+            label.className = 'jr-timer-label';
+            label.textContent = props.label;
+            div.appendChild(label);
+          }
+          var btn = document.createElement('button');
+          btn.className = 'jr-timer-btn';
+          btn.textContent = 'Start';
+          var interval = null;
+          btn.addEventListener('click', function() {
+            if (interval) {
+              clearInterval(interval);
+              interval = null;
+              btn.textContent = 'Start';
+            } else {
+              btn.textContent = 'Pause';
+              interval = setInterval(function() {
+                remaining--;
+                display.textContent = fmt(Math.max(0, remaining));
+                if (remaining <= 0) {
+                  clearInterval(interval);
+                  interval = null;
+                  btn.textContent = 'Done';
+                  if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+                  emitUIAction('timer_complete', { label: props.label });
+                }
+              }, 1000);
+            }
+          });
+          div.appendChild(btn);
+          return div;
+        },
+
+        Badge: function(props) {
+          var span = document.createElement('span');
+          span.className = 'jr-badge';
+          span.textContent = props.text || '';
+          span.style.background = props.color || '#333';
+          span.style.color = '#fff';
+          return span;
+        },
+
+        Divider: function() {
+          var div = document.createElement('div');
+          div.className = 'jr-divider';
+          return div;
+        }
+      };
+
+      function renderUISpec(spec) {
+        renderContent.innerHTML = '';
+        if (!spec || !spec.root || !spec.elements) return;
+        var rootEl = renderElement(spec, spec.root);
+        if (rootEl) renderContent.appendChild(rootEl);
+        renderPanel.style.display = '';
+      }
+
+      function renderElement(spec, id) {
+        var el = spec.elements[id];
+        if (!el) return null;
+        var renderer = COMPONENT_RENDERERS[el.type];
+        if (!renderer) return null;
+        var children = (el.children || []).map(function(cid) {
+          return renderElement(spec, cid);
+        }).filter(Boolean);
+        return renderer(el.props || {}, children);
+      }
+
+      function emitUIAction(action, data) {
+        fetch(origin + '/mode-switch?token=' + encodeURIComponent(token), {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'ui_action', uiAction: action, data: data })
+        }).catch(function() {});
       }
     })();
   </script>
