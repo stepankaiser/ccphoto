@@ -107,7 +107,7 @@ export async function runMcpServer(): Promise<void> {
 
   server.tool(
     "wait_for_photo",
-    "Wait for a photo or a user action from the phone. Blocks until something happens: a photo is uploaded, the user switches to Live mode, or timeout. The phone is fully bidirectional — the user can drive the interaction by tapping Photo or Live on their phone. If the user switches to Live mode, you should call get_live_frame to start watching. If a photo arrives, it is returned as an image.",
+    "Wait for a photo or a user action from the phone. Blocks until something happens: a photo is uploaded, the user switches to Live mode, or timeout. The phone is fully bidirectional — the user can drive the interaction by tapping Photo or Live on their phone. If the user switches to Live mode, you should call get_live_frame to start watching. If a photo arrives, it is returned as an image. IMPORTANT: After processing the result, IMMEDIATELY call wait_for_photo AGAIN to keep listening. This creates a persistent connection where the user can keep sending photos, voice messages, or switching modes from the phone without typing in Claude Code. Only stop the loop if the user explicitly types something in Claude Code.",
     {
       timeout_seconds: z
         .number()
@@ -127,7 +127,7 @@ export async function runMcpServer(): Promise<void> {
           content: [
             {
               type: "text" as const,
-              text: `No activity within ${Math.round(timeoutMs / 1000)} seconds.${url ? ` The camera server is still running at: ${url}` : ""}\n\nCall capture_photo again to show the QR code, then wait_for_photo to receive it.`,
+              text: `No activity within ${Math.round(timeoutMs / 1000)} seconds. The phone is still connected. Call wait_for_photo again to keep listening.`,
             },
           ],
         };
