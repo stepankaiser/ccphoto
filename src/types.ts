@@ -19,6 +19,7 @@ export interface OutgoingMessage {
   imageData?: string;
   mimeType?: string;
   speak?: boolean;
+  uiSpec?: UISpec;
 }
 
 export interface FrameData {
@@ -32,4 +33,15 @@ export interface FrameData {
 export interface CertPems {
   key: string;
   cert: string;
+}
+
+export interface UISpec {
+  root: string;
+  elements: Record<string, UIElement>;
+}
+
+export interface UIElement {
+  type: string;
+  props?: Record<string, unknown>;
+  children?: string[];
 }

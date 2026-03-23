@@ -276,11 +276,14 @@ export async function runMcpServer(): Promise<void> {
       image_base64: z.string().optional().describe("Base64-encoded image data to display on the phone."),
       image_mime_type: z.string().optional().describe("MIME type of the image (e.g. 'image/png'). Required when image_base64 is provided."),
       speak: z.preprocess((v) => v === "true" || v === true, z.boolean()).optional().describe("If true, the phone will speak the text aloud using text-to-speech."),
+      ui_spec: z.string().optional().describe(
+        "JSON UI specification for rendering rich, contextual UI on the phone. Generate a spec with root + elements map. Available component types: Card (title, subtitle), Text (content with markdown), Image (src, caption), Metric (label, value, unit), MetricGrid (columns: 2|3, children are Metric elements), Checklist (items: [{text, checked}]), StepByStep (steps: string[], currentStep: number), Alert (message, variant: info|warning|success|error), Table (headers: string[], rows: string[][]), Timer (seconds, label), Badge (text, color), Divider. Example: {\"root\":\"c\",\"elements\":{\"c\":{\"type\":\"Card\",\"props\":{\"title\":\"Result\"},\"children\":[\"t\"]},\"t\":{\"type\":\"Text\",\"props\":{\"content\":\"Hello\"}}}}"
+      ),
     },
-    async ({ text, image_base64, image_mime_type, speak }) => {
-      if (!text && !image_base64) {
+    async ({ text, image_base64, image_mime_type, speak, ui_spec }) => {
+      if (!text && !image_base64 && !ui_spec) {
         return {
-          content: [{ type: "text" as const, text: "Error: provide at least 'text' or 'image_base64'." }],
+          content: [{ type: "text" as const, text: "Error: provide at least 'text', 'image_base64', or 'ui_spec'." }],
         };
       }
 
@@ -303,12 +306,22 @@ export async function runMcpServer(): Promise<void> {
         message.mimeType = image_mime_type;
       }
       if (speak) message.speak = true;
+      if (ui_spec) {
+        try {
+          message.uiSpec = JSON.parse(ui_spec);
+        } catch {
+          return {
+            content: [{ type: "text" as const, text: "Error: ui_spec is not valid JSON." }],
+          };
+        }
+      }
 
       sendToPhone(message);
 
       const parts: string[] = [];
       if (text) parts.push(`text (${text.length} chars)`);
       if (image_base64) parts.push(`image (${image_mime_type})`);
+      if (ui_spec) parts.push("UI spec");
       if (speak) parts.push("(spoken)");
 
       return {
