@@ -104,12 +104,19 @@ function notifyPhotoListeners(meta: PhotoMeta): void {
 }
 
 function notifyActionListeners(action: UserAction): void {
-  // Push channel notification for voice messages
-  if (channelNotifier && action.action === "voice_message") {
-    channelNotifier(
-      (action.data?.text as string) || "(voice)",
-      { event: "voice", speaker: "user" },
-    );
+  // Push channel notifications for all user actions
+  if (channelNotifier) {
+    if (action.action === "voice_message") {
+      channelNotifier(
+        (action.data?.text as string) || "(voice)",
+        { event: "voice", speaker: "user" },
+      );
+    } else {
+      channelNotifier(
+        `User action: ${action.action}`,
+        { event: action.action },
+      );
+    }
   }
 
   if (actionListeners.length === 0) {
