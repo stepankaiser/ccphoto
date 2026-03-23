@@ -70,7 +70,7 @@ async function ensureHttpsServer(): Promise<string> {
 export async function runMcpServer(): Promise<void> {
   const server = new McpServer({
     name: "ccphoto",
-    version: "0.3.0",
+    version: "0.3.1",
   });
 
   server.tool(
