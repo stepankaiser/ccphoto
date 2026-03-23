@@ -270,7 +270,7 @@ export async function runMcpServer(): Promise<void> {
 
   server.tool(
     "send_to_phone",
-    "Send text and/or an image to the connected phone display. The phone becomes a reference screen — useful for showing wiring instructions, pinout diagrams, code snippets, or reference images while the user works with both hands. Text supports basic markdown (headers, bold, code, lists). Requires a phone to be connected via capture_photo first.",
+    "Send text, images, or rich generative UI to the connected phone display. For simple messages use text (supports markdown). For rich contextual layouts use ui_spec — generate a JSON spec with 12 component types to create interactive cards, checklists, step-by-step guides, data tables, timers, and more. The phone becomes a reference screen while the user works with both hands. Set speak:true for text-to-speech. Requires a phone to be connected via capture_photo first.",
     {
       text: z.string().optional().describe("Text content to display. Supports basic markdown: **bold**, `code`, # headers, - lists, ```code blocks```."),
       image_base64: z.string().optional().describe("Base64-encoded image data to display on the phone."),
