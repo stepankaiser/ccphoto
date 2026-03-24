@@ -1891,7 +1891,7 @@ export function renderMobilePage(token: string): string {
           var img = document.createElement('img');
           img.className = 'jr-image';
           var src = props.src || '';
-          if (src && !/^(https?:|data:image\/)/.test(src)) src = '';
+          if (src && !/^(https?:|data:image\\/)/.test(src)) src = '';
           img.src = src;
           img.alt = props.alt || '';
           frag.appendChild(img);
