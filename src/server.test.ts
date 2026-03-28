@@ -16,6 +16,7 @@ import {
   sendToPhone,
   getLatestFrame,
   setChannelNotifier,
+  setLocalhostBypass,
   _resetState,
 } from "./server.js";
 import { generateToken } from "./token.js";
@@ -87,6 +88,7 @@ async function boot(): Promise<void> {
   tmpDir = makeTmpDir();
   token = generateToken();
   port = 49000 + Math.floor(Math.random() * 1000);
+  setLocalhostBypass(false); // Tests must validate token auth properly
   await startServer({ port, outputDir: tmpDir, token, host: "0.0.0.0" });
   // port may have been bumped if the original was in use
   port = getServerConfig()!.port;

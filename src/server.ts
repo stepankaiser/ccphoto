@@ -137,7 +137,7 @@ function handleModeSwitch(
 ): void {
   const url = new URL(req.url ?? "/", `http://${req.headers.host}`);
 
-  if (!checkToken(url, cfg.token)) {
+  if (!checkToken(url, cfg.token, req)) {
     res.writeHead(403, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ error: "Forbidden" }));
     return;
@@ -178,7 +178,20 @@ function handleModeSwitch(
   });
 }
 
-function checkToken(url: URL, expected: string): boolean {
+let localhostBypass = true;
+
+export function setLocalhostBypass(enabled: boolean): void {
+  localhostBypass = enabled;
+}
+
+function checkToken(url: URL, expected: string, req?: http.IncomingMessage): boolean {
+  // Allow tokenless access from localhost (USB/ADB reverse proxy — physical access is auth)
+  if (localhostBypass && req) {
+    const remoteAddr = req.socket.remoteAddress ?? "";
+    if (remoteAddr === "127.0.0.1" || remoteAddr === "::1" || remoteAddr === "::ffff:127.0.0.1") {
+      return true;
+    }
+  }
   const token = url.searchParams.get("token") ?? "";
   return validateToken(token, expected);
 }
@@ -190,7 +203,7 @@ function handleGetRoot(
 ): void {
   const url = new URL(req.url ?? "/", `http://${req.headers.host}`);
 
-  if (!checkToken(url, cfg.token)) {
+  if (!checkToken(url, cfg.token, req)) {
     res.writeHead(403, { "Content-Type": "text/plain" });
     res.end("Forbidden");
     return;
@@ -211,7 +224,7 @@ function handleUpload(
 ): void {
   const url = new URL(req.url ?? "/", `http://${req.headers.host}`);
 
-  if (!checkToken(url, cfg.token)) {
+  if (!checkToken(url, cfg.token, req)) {
     res.writeHead(403, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ error: "Forbidden" }));
     return;
@@ -277,7 +290,7 @@ function handleEvents(
 ): void {
   const url = new URL(req.url ?? "/", `http://${req.headers.host}`);
 
-  if (!checkToken(url, cfg.token)) {
+  if (!checkToken(url, cfg.token, req)) {
     res.writeHead(403, { "Content-Type": "text/plain" });
     res.end("Forbidden");
     return;
@@ -364,7 +377,7 @@ function handleFrameUpload(
 ): void {
   const url = new URL(req.url ?? "/", `http://${req.headers.host}`);
 
-  if (!checkToken(url, cfg.token)) {
+  if (!checkToken(url, cfg.token, req)) {
     res.writeHead(403, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ error: "Forbidden" }));
     return;
@@ -517,6 +530,7 @@ export function _resetState(): void {
   photoListeners.length = 0;
   actionListeners.length = 0;
   channelNotifier = null;
+  localhostBypass = true;
   for (const client of sseClients) {
     client.end();
   }
